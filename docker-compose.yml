@@ -2,6 +2,7 @@ version: "3.4"
 
 volumes:
   astro_node_modules:
+  ui_volume:
 
 services:
   nginx:
@@ -21,7 +22,7 @@ services:
     volumes:
       - ./application-api/:/app
     expose:
-      - 7777
+      - "7777:7777"
     depends_on:
       - database
       - flyway
@@ -36,6 +37,7 @@ services:
     restart: "no"
     volumes:
       - ./application-ui/:/app
+      - ui_volume:/app/node_modules
     expose:
       - 3000
     depends_on:
