@@ -23,6 +23,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 # Create a connection to the PostgreSQL database
 database = Database(DATABASE_URL)
 
+list_of_active_users = []
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -66,10 +68,18 @@ def check_jwt_token(token: str = Depends(oauth2_scheme)):
 
 @app.post("/login")
 async def login(request: Request):
-    print("ASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDS")
-    data = await request.json()
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Payload not valid JSON")
+
     username = data.get("username")
     password = data.get("password")
+
+    if not username:
+        raise HTTPException(status_code=400, detail="Missing username")
+    if not password:
+        raise HTTPException(status_code=400, detail="Missing password")
 
     # Execute the SQL query using databases
     user = await database.fetch_one(
@@ -97,7 +107,17 @@ app.mount("/", socket_app)
 
 @sio.on("connect")
 async def connect(sid, env):
-    print("new client connected with session id: " + str(sid))
+    # print("new client connected with session id: " + str(sid))
+
+    query_args = {key: value for key, value in (pair.split("=") for pair in str(env.get("QUERY_STRING")).split("&"))}
+
+    if "token" not in query_args:
+        raise HTTPException(status_code=400, detail="Missing token")
+
+    token = query_args["token"]
+    check_jwt_token(token)
+
+    print(f"Received session token: {token}")
 
 
 @sio.on("message")
