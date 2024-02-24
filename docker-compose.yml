@@ -24,8 +24,10 @@ services:
     ports:
       - 7777:7777
     depends_on:
-      - database
-      - flyway
+      database:
+        condition: "service_healthy"
+      flyway:
+        condition: "service_started"
     env_file:
       - project.env
     deploy:
@@ -51,6 +53,11 @@ services:
       - 5432
     env_file:
       - project.env
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "example_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   flyway:
     image: flyway/flyway:9.11.0-alpine

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.responses import JSONResponse
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from databases import Database
@@ -65,6 +66,23 @@ def check_jwt_token(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
+async def insert_room(room_name: str) -> int:
+    query = "INSERT INTO rooms(name) VALUES (:name) RETURNING id"
+    values = {"name": room_name}
+    room_id = await database.execute(query=query, values=values)
+    return room_id
+
+async def insert_user_room_mapping(user_name: str, room_id: int) -> None:
+    query = "INSERT INTO user_room_mappings(user_name, room_id) VALUES (:user_name, :room_id)"
+    values = {"user_name": user_name, "room_id": room_id}
+    await database.execute(query=query, values=values)
+
+async def check_user_exists(username: str) -> bool:
+    query="SELECT * FROM users WHERE name = :username",
+    values = {"username": username}
+    response = await database.execute(query=query, values=values)
+    print(response)
+    return bool(response)
 
 @app.post("/login")
 async def login(request: Request):
@@ -83,7 +101,7 @@ async def login(request: Request):
 
     # Execute the SQL query using databases
     user = await database.fetch_one(
-        query="SELECT * FROM users WHERE username = :username AND password = :password",
+        query="SELECT * FROM users WHERE name = :username AND password = :password",
         values={"username": username, "password": password},
     )
 
@@ -97,6 +115,26 @@ async def login(request: Request):
 @app.get("/whoami")
 async def whoami(current_user: str = Depends(check_jwt_token)):
     return {"username": current_user}
+
+
+@app.post("/create_chat_room")
+async def create_room(request: Request, user_name: str = Depends(check_jwt_token)):
+    try:
+        data = await request.json()
+        room_name = data.get("room_name")
+        users = data.get("users")
+
+        async with database.transaction():
+            room_id = await insert_room(room_name)
+            await insert_user_room_mapping(user_name, room_id)
+            for user in users:
+                if check_user_exists(user):
+                    await insert_user_room_mapping(user, room_id)
+
+        return JSONResponse({"message": f"A room with {room_id} has been created.", "room_id": room_id}, status_code=200)
+    except Exception as e:
+        print("an error occured", e)
+        return HTTPException(status_code=400, detail="Failed to create chat room")
 
 sio = socketio.AsyncServer(cors_allowed_origins='*', async_mode='asgi')
 
@@ -119,17 +157,25 @@ async def connect(sid, env):
 
     print(f"Received session token: {token}")
 
-
 @sio.on("message")
 async def message(sid, data):
     print(f"received message: {data}")
     await sio.emit('message', {'data': 'foobar'})
 
+@sio.on("join_room")
+async def join_room(sid, token, room_id):
+    try:
+        username = check_jwt_token(token)
+        #1. CheckUserExistsInRoom
+        sid.enter_room(sid, room_id)
+    except JWTError:
+        sid.emit("error", "not a valid user")
+    except Exception as e:
+        sid.emit("error", "error occured while joining a room")
 
 @sio.on("disconnect")
 async def disconnect(sid):
     print("client disconnected: " + str(sid))
-
 
 if __name__ == "__main__":
     import uvicorn
