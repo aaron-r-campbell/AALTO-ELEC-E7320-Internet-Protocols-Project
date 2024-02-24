@@ -21,15 +21,15 @@ services:
     restart: "no"
     volumes:
       - ./application-api/:/app
-    expose:
-      - "7777:7777"
+    ports:
+      - 7777:7777
     depends_on:
       - database
       - flyway
     env_file:
       - project.env
     deploy:
-      replicas: 2
+      replicas: 1
 
   application-ui:
     build: application-ui

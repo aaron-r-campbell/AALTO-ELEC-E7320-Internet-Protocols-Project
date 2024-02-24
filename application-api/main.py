@@ -66,6 +66,7 @@ def check_jwt_token(token: str = Depends(oauth2_scheme)):
 
 @app.post("/login")
 async def login(request: Request):
+    print("ASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDS")
     data = await request.json()
     username = data.get("username")
     password = data.get("password")
