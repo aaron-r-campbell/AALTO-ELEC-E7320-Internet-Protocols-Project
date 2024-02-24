@@ -4,9 +4,10 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from databases import Database
 from dotenv import load_dotenv
-import asyncpg
+# import asyncpg
 import os
 from contextlib import asynccontextmanager
+import socketio
 
 # Load environment variables from .env file
 load_dotenv()
@@ -85,6 +86,28 @@ async def login(request: Request):
 @app.get("/whoami")
 async def whoami(current_user: str = Depends(check_jwt_token)):
     return {"username": current_user}
+
+sio = socketio.AsyncServer(cors_allowed_origins='*', async_mode='asgi')
+
+# wrap with ASGI application
+socket_app = socketio.ASGIApp(sio)
+app.mount("/", socket_app)
+
+
+@sio.on("connect")
+async def connect(sid, env):
+    print("new client connected with session id: " + str(sid))
+
+
+@sio.on("message")
+async def message(sid, data):
+    print(f"received message: {data}")
+    await sio.emit('message', {'data': 'foobar'})
+
+
+@sio.on("disconnect")
+async def disconnect(sid):
+    print("client disconnected: " + str(sid))
 
 
 if __name__ == "__main__":

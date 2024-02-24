@@ -5,3 +5,5 @@ jose==1.0.0
 python-dotenv==1.0.1
 python_jose==3.3.0
 uvicorn==0.27.1
+python-socketio==5.11.1
+databases==0.8.0
