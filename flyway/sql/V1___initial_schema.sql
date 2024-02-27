@@ -1,7 +1,9 @@
 CREATE TABLE users (
     name TEXT NOT NULL PRIMARY KEY UNIQUE,
     password TEXT NOT NULL,
-    friendly_name TEXT NOT NULL
+    friendly_name TEXT NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT FALSE,
+    lastSeen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE rooms (
@@ -26,3 +28,4 @@ CREATE TABLE messages (
 CREATE TABLE files (
     id SERIAL PRIMARY KEY
 );
+
