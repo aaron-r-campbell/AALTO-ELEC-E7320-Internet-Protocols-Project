@@ -13,6 +13,8 @@ INSERT INTO messages (sender_name, room_id, message) VALUES ('user4', 2, 'How ab
 -- Room: Aalto Internet Protocols
 INSERT INTO messages (sender_name, room_id, message) VALUES ('user1', 3, 'Hello team! Excited about our upcoming chat-app project!');
 INSERT INTO messages (sender_name, room_id, message) VALUES ('user2', 3, 'Absolutely! Let''s discuss our roles and responsibilities.');
+INSERT INTO messages (sender_name, room_id, message) VALUES ('system', 3, 'user3 joined the chat.');
+INSERT INTO messages (sender_name, room_id, message) VALUES ('system', 3, 'user4 joined the chat.');
 INSERT INTO messages (sender_name, room_id, message) VALUES ('user3', 3, 'I''ve been brainstorming some ideas for the user interface. Any preferences?');
 INSERT INTO messages (sender_name, room_id, message) VALUES ('user4', 3, 'I''m focusing on the backend.');
 INSERT INTO messages (sender_name, room_id, message) VALUES ('user2', 3, 'Great! Are there any specific functionalities we should prioritize?');
