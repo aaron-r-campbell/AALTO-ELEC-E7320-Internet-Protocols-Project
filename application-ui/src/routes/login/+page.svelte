@@ -1,6 +1,7 @@
 <script>
 	import { goto } from "$app/navigation";
 	import axios from "axios";
+	import io from "socket.io-client";
 
 	let username = "",
 		password = "";
@@ -15,7 +16,17 @@
 		if (response.status === 200) {
 			axios.defaults.headers.common["Authorization"] =
 				`Bearer ${response.data.token}`;
-			console.log('set to',axios.defaults.headers.common["Authorization"]);
+			console.log("set to", axios.defaults.headers.common["Authorization"]);
+
+			response.data.token;
+			const socket = io("http://localhost:7777", {
+				auth: { token: response.data.token },
+			});
+
+			socket.on("connect", () => {
+				console.log("Socket.io connected");
+			});
+
 			goto("/");
 		}
 	};

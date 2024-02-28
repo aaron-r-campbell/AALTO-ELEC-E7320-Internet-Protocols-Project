@@ -117,16 +117,16 @@ app.mount("/", socket_app)
 
 
 @sio.on("connect")
-async def connect(sid, env):
+async def connect(sid, env, auth):
     # print("new client connected with session id: " + str(sid))
-
-    query_args = {key: value for key, value in (pair.split("=") for pair in str(env.get("QUERY_STRING")).split("&"))}
-
-    if "token" not in query_args:
+    if auth is None:
+        raise HTTPException(status_code=400, detail="Missing auth")
+    if "token" not in auth:
         raise HTTPException(status_code=400, detail="Missing token")
 
+    token = auth["token"]
+
     # Validate the token and add the username to the user session.
-    token = query_args["token"]
     username = check_jwt_token(token)
     async with sio.session(sid) as session:
         session['username'] = username
