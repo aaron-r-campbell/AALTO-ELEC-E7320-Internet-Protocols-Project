@@ -3,6 +3,17 @@
 
     export let current_user = "";
 
+    const get_messages = async (chat_room_id) => {
+        const response = await axios.get(
+            `/api/messages?${chat_room_id}`,
+            {},
+            { withCredentials: true },
+        );
+
+        const response_json = await response.json();
+        console.log(response_json);
+    };
+
     let messages = [
         {
             sender: "Alice",
@@ -56,7 +67,7 @@
 <div>
     {#each messages as message}
         <Message
-            bind:current_user={current_user}
+            bind:current_user
             bind:sender={message.sender}
             bind:content={message.content}
             bind:timestamp={message.timestamp}
