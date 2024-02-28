@@ -26,10 +26,6 @@ list_of_active_users = []
 # FastAPI application
 app = FastAPI(lifespan=lifespan)
 
-# OAuth2PasswordBearer for handling token authentication
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
 @app.post("/token")
 @app.post("/login")
 async def login(request: Request):
@@ -59,14 +55,14 @@ async def login(request: Request):
 
 @app.get("/whoami")
 async def whoami(
-    current_user: str = Depends(check_jwt_token(token=Depends(oauth2_scheme))),
+    current_user: str = Depends(check_jwt_token),
 ):
     return {"username": current_user}
 
 
 @app.post("/create_chat_room")
 async def create_room(
-    room: Room, username: str = Depends(check_jwt_token(token=Depends(oauth2_scheme)))
+    room: Room, username: str = Depends(check_jwt_token)
 ):
     transaction = await db.transaction()
     try:
@@ -92,7 +88,7 @@ async def create_room(
 
 @app.get("/messages")
 async def retrieve_messages(
-    room_id: int, username: str = Depends(check_jwt_token(token=Depends(oauth2_scheme)))
+    room_id: int, username: str = Depends(check_jwt_token)
 ):
     try:
         if await user_exists_in_room(db, username, room_id):
