@@ -15,8 +15,6 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ENCRYPTION_ALGORITHM = os.getenv("ENCRYPTION_ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
-list_of_active_users = []
-
 # FastAPI application
 app = FastAPI(lifespan=lifespan)
 
@@ -198,8 +196,11 @@ async def send_message(sid, message, room_id):
         print(f"Exception occured while sending message: {e}")
 
 
+# @sio.on("test_latency")
+# async def test_latency(sid, timestamp):
+
 @sio.on("test_download")
-async def test_throughput(sid):
+async def test_download(sid):
     binary_payload = 0
     for i in range(1024):
         if i % 2 == 1:
@@ -208,7 +209,9 @@ async def test_throughput(sid):
     start_time = datetime.now()
     end_time = datetime.now()
     packets_sent = 0
+    # For future, grow the payload size based on connection speed to reduce the effect of latency.
     while (end_time - start_time).total_seconds() < 10:  # Do for 10 seconds
+        print("Emmitting message in test_download")
         await sio.emit("receive_throughput", data=binary_payload, to=sid)
         packets_sent += 1
         end_time = datetime.now()
@@ -216,6 +219,13 @@ async def test_throughput(sid):
     throughput_kbps = (packets_sent * 1024) / (end_time - start_time).total_seconds()
 
     await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
+
+
+client_total_bytes = {}
+
+# @sio.on("test_upload")
+# async def test_upload(sid):
+#     total = 0
 
 
 @sio.on("disconnect")
