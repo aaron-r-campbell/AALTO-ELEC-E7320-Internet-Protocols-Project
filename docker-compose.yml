@@ -1,7 +1,6 @@
 version: "3.4"
 
 volumes:
-  astro_node_modules:
   ui_volume:
 
 services:

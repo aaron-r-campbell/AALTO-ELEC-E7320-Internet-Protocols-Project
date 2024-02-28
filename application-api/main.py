@@ -90,7 +90,7 @@ async def create_room(room: Room, username: str = Depends(check_jwt_token)):
             if exists:
                 await insert_user_room_mapping(user, room_id)
     except Exception as e:
-        print("an error occured", e)
+        print("an error occurred", e)
         await transaction.rollback()
         return HTTPException(status_code=400, detail="Failed to create chat room")
     else:
@@ -106,7 +106,7 @@ async def retrieve_messages(room_id: int, username: str = Depends(check_jwt_toke
             print(messages)
             return JSONResponse({"messages": json.dumps(messages)}, status_code=200)
     except Exception as e:
-        print(f"an error occured while retrieveing messages: {e}")
+        print(f"an error occurred while retrieving messages: {e}")
         return HTTPException(status_code=500)
 
 sio = socketio.AsyncServer(cors_allowed_origins='*', async_mode='asgi')
@@ -130,7 +130,7 @@ async def connect(sid, env):
     username = check_jwt_token(token)
     async with sio.session(sid) as session:
         session['username'] = username
-    print(f"Conenection has been made with the user: {username}")
+    print(f"Connection has been made with the user: {username}")
     print(f"Received session token: {token}")
 
 
@@ -193,7 +193,7 @@ async def send_message(sid, message, room_id):
         print(f"JWT ERROR: {e}")
 
     except Exception as e:
-        print(f"Exception occured while sending message: {e}")
+        print(f"Exception occurred while sending message: {e}")
 
 
 # @sio.on("test_latency")
