@@ -7,7 +7,7 @@ import json
 # import asyncpg
 import os
 import socketio
-from db_queries import check_user_exists, get_messages, save_message, user_exists_in_room, get_user, insert_room, insert_user_room_mapping, lifespan, database
+from db_queries import check_user_exists, get_messages, save_message, user_exists_in_room, get_user, insert_room, insert_user_room_mapping, lifespan, database  # noqa -- Removes local linter warning :)
 from models import Room
 
 # Secret key to sign JWT token
@@ -47,6 +47,7 @@ def check_jwt_token(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
+
 @app.post("/login")
 async def login(request: Request):
     try:
@@ -76,6 +77,7 @@ async def login(request: Request):
 async def whoami(current_user: str = Depends(check_jwt_token)):
     return {"username": current_user}
 
+
 @app.post("/create_chat_room")
 async def create_room(room: Room, username: str = Depends(check_jwt_token)):
     transaction = await database.transaction()
@@ -95,7 +97,7 @@ async def create_room(room: Room, username: str = Depends(check_jwt_token)):
         return HTTPException(status_code=400, detail="Failed to create chat room")
     else:
         await transaction.commit()
-        return JSONResponse({"message": f"A room has been created.", "room_id": room_id}, status_code=200)
+        return JSONResponse({"message": "A room has been created.", "room_id": room_id}, status_code=200)
 
 
 @app.get("/messages")
@@ -115,6 +117,7 @@ sio = socketio.AsyncServer(cors_allowed_origins='*', async_mode='asgi')
 socket_app = socketio.ASGIApp(sio)
 app.mount("/", socket_app)
 
+
 @sio.on("connect")
 async def connect(sid, env):
     # print("new client connected with session id: " + str(sid))
@@ -132,10 +135,12 @@ async def connect(sid, env):
     print(f"Conenection has been made with the user: {username}")
     print(f"Received session token: {token}")
 
+
 @sio.on("message")
 async def message(sid, data):
     print(f"received message: {data}")
     await sio.emit('message', {'data': 'foobar'})
+
 
 @sio.on("join_room")
 async def join_room(sid, room_id):
@@ -145,19 +150,20 @@ async def join_room(sid, room_id):
             username = session['username']
             if not await user_exists_in_room(username, room_id):
                 raise Exception("No permission to join the room")
-        
+
         await sio.enter_room(sid, room_id)
         await sio.emit('join_room', 'You have joined the room successfully', room=sid)
-    
+
     except ValueError:
         await sio.emit("error", "Invalid room ID")
-    
+
     except KeyError:
         await sio.emit("error", "No username found in session")
-    
+
     except Exception as e:
         print(f"Exception occurred while joining a room: {e}")
         await sio.emit("error", "Error occurred while joining a room")
+
 
 @sio.on("send_msg")
 async def send_message(sid, message, room_id):
@@ -167,21 +173,21 @@ async def send_message(sid, message, room_id):
 
         # Get the user name from the session
         session = await sio.get_session(sid)
-        username = session['username']  
+        username = session['username']
 
         if not await user_exists_in_room(username, room_id):
             raise Exception("no permission to send messages to the room")
-        
+
         # Save the message
         await save_message(sender_name=username, room_id=room_id, message=message)
         print("Message has been saved")
-        
+
         # Prepare data to emit
         data = {"username": username, "message": message}
-        
+
         # Emit the message to the room
         await sio.emit("receive_msg", data=data, room=room_id, skip_sid=sid)
-    
+
     except ValueError as ve:
         print(f"ValueError: {ve}")
 
@@ -190,6 +196,27 @@ async def send_message(sid, message, room_id):
 
     except Exception as e:
         print(f"Exception occured while sending message: {e}")
+
+
+@sio.on("test_download")
+async def test_throughput(sid):
+    binary_payload = 0
+    for i in range(1024):
+        if i % 2 == 1:
+            binary_payload |= 1 << i
+
+    start_time = datetime.now()
+    end_time = datetime.now()
+    packets_sent = 0
+    while (end_time - start_time).total_seconds() < 10:  # Do for 10 seconds
+        await sio.emit("receive_throughput", data=binary_payload, to=sid)
+        packets_sent += 1
+        end_time = datetime.now()
+
+    throughput_kbps = (packets_sent * 1024) / (end_time - start_time).total_seconds()
+
+    await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
+
 
 @sio.on("disconnect")
 async def disconnect(sid):
