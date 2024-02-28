@@ -12,13 +12,13 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 # Create a connection to the PostgreSQL database
-database = Database(DATABASE_URL)
+db = Database(DATABASE_URL)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Connect to db on startup
-    await database.connect()
+    await db.connect()
     yield
     # Disconnect from db on shutdown
-    await database.disconnect()
+    await db.disconnect()

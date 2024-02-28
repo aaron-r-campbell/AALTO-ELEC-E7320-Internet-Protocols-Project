@@ -9,7 +9,7 @@ import json
 import socketio
 from models import Room
 
-from utils.db_util import lifespan, database
+from utils.db_util import lifespan, db
 from utils.auth_util import create_jwt_token, check_jwt_token
 from services.db_service import (
     check_user_exists,
@@ -47,7 +47,7 @@ async def login(request: Request):
         raise HTTPException(status_code=400, detail="Missing password")
 
     # Execute the SQL query using databases
-    user = await get_user(username, password)
+    user = await get_user(db, username, password)
 
     if user:
         return {
@@ -68,17 +68,17 @@ async def whoami(
 async def create_room(
     room: Room, username: str = Depends(check_jwt_token(token=Depends(oauth2_scheme)))
 ):
-    transaction = await database.transaction()
+    transaction = await db.transaction()
     try:
         # create a room
-        room_id = await insert_room(room.name)
+        room_id = await insert_room(db, room.name)
         # Add the user to the room
-        await insert_user_room_mapping(username, room_id)
+        await insert_user_room_mapping(db, username, room_id)
         # Add the rest of the users to the room
         for user in room.users:
-            exists = await check_user_exists(user)
+            exists = await check_user_exists(db, user)
             if exists:
-                await insert_user_room_mapping(user, room_id)
+                await insert_user_room_mapping(db, user, room_id)
     except Exception as e:
         print("an error occurred", e)
         await transaction.rollback()
@@ -95,8 +95,8 @@ async def retrieve_messages(
     room_id: int, username: str = Depends(check_jwt_token(token=Depends(oauth2_scheme)))
 ):
     try:
-        if await user_exists_in_room(username, room_id):
-            messages = await get_messages(room_id)
+        if await user_exists_in_room(db, username, room_id):
+            messages = await get_messages(db, room_id)
             print(messages)
             return JSONResponse({"messages": json.dumps(messages)}, status_code=200)
     except Exception as e:
@@ -146,7 +146,7 @@ async def join_room(sid, room_id):
         room_id = int(room_id)
         async with sio.session(sid) as session:
             username = session["username"]
-            if not await user_exists_in_room(username, room_id):
+            if not await user_exists_in_room(db, username, room_id):
                 raise Exception("No permission to join the room")
 
         await sio.enter_room(sid, room_id)
@@ -173,11 +173,13 @@ async def send_message(sid, message, room_id):
         session = await sio.get_session(sid)
         username = session["username"]
 
-        if not await user_exists_in_room(username, room_id):
+        if not await user_exists_in_room(db, username, room_id):
             raise Exception("no permission to send messages to the room")
 
         # Save the message
-        await save_message(sender_name=username, room_id=room_id, message=message)
+        await save_message(
+            db=db, sender_name=username, room_id=room_id, message=message
+        )
         print("Message has been saved")
 
         # Prepare data to emit
