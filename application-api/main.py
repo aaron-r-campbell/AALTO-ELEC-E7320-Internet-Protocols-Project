@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
-from fastapi.security import OAuth2PasswordBearer
+# from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import JSONResponse
 from jose import JWTError
 from datetime import datetime
@@ -24,6 +24,7 @@ from services.db_service import (
 
 # FastAPI application
 app = FastAPI(lifespan=lifespan)
+
 
 @app.post("/token")
 @app.post("/login")
@@ -89,18 +90,19 @@ async def create_room(
         )
 
 
-@app.get("/messages")
-async def retrieve_messages(
-    room_id: int, username: str = Depends(check_jwt_token)
-):
-    try:
-        if await user_exists_in_room(db, username, room_id):
-            messages = await get_messages(db, room_id)
-            print(messages)
-            return JSONResponse({"messages": json.dumps(messages)}, status_code=200)
-    except Exception as e:
-        print(f"an error occurred while retrieving messages: {e}")
-        return HTTPException(status_code=500)
+# moved to socketio
+# @app.get("/messages")
+# async def retrieve_messages(
+#     room_id: int, username: str = Depends(check_jwt_token)
+# ):
+#     try:
+#         if await user_exists_in_room(db, username, room_id):
+#             messages = await get_messages(db, room_id)
+#             print(messages)
+#             return JSONResponse({"messages": json.dumps(messages)}, status_code=200)
+#     except Exception as e:
+#         print(f"an error occurred while retrieving messages: {e}")
+#         return HTTPException(status_code=500)
 
 
 sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
@@ -111,17 +113,23 @@ app.mount("/", socket_app)
 
 
 @sio.on("connect")
-async def connect(sid, env, auth):
-    # print("new client connected with session id: " + str(sid))
-    if auth is None:
-        raise HTTPException(status_code=400, detail="Missing auth")
-    if "token" not in auth:
-        raise HTTPException(status_code=400, detail="Missing token")
+async def connect(sid, env):
+    # print("THIS IS THE ENV:", env)
+    print("new client connected with session id: " + str(sid))
 
-    token = auth["token"]
+
+@sio.on("authenticate")
+async def authenticate(sid, token):
+    if token is None:
+        raise HTTPException(status_code=400, detail="Missing token")
 
     # Validate the token and add the username to the user session.
     username = check_jwt_token(token)
+
+    """
+    A user is authenticated if their username is in the session["username"].
+    In the future, the username should be accessed through this.
+    """
     async with sio.session(sid) as session:
         session["username"] = username
     print(f"Connection has been made with the user: {username}")
@@ -137,6 +145,8 @@ async def message(sid, data):
 @sio.on("join_room")
 async def join_room(sid, room_id):
     try:
+        print("join_room sid", sid)
+        print("join_room room_id", room_id)
         room_id = int(room_id)
         async with sio.session(sid) as session:
             username = session["username"]
@@ -155,6 +165,24 @@ async def join_room(sid, room_id):
     except Exception as e:
         print(f"Exception occurred while joining a room: {e}")
         await sio.emit("error", "Error occurred while joining a room")
+
+
+@sio.on("fetch_room_messages")
+async def fetch_room_messages(sid, room_id):
+    print("fetch_room_messages room_id", room_id)
+    room_id = int(room_id)
+
+    async with sio.session(sid) as session:
+        username = session["username"]
+        if not await user_exists_in_room(db, username, room_id):
+            raise Exception("No permission to join the room")
+        messages = await get_messages(db, room_id)
+        print(messages)
+
+    if await user_exists_in_room(db, username, room_id):
+        return JSONResponse({"messages": json.dumps(messages)}, status_code=200)
+
+    sio.emit("fetch_room_messages_response", messages, room=sid)
 
 
 @sio.on("send_msg")
@@ -192,11 +220,8 @@ async def send_message(sid, message, room_id):
         print(f"Exception occurred while sending message: {e}")
 
 
-# @sio.on("test_latency")
-# async def test_latency(sid, timestamp):
-
 @sio.on("test_download")
-async def test_download(sid):
+async def test_download(sid, _):
     binary_payload = 0
     for i in range(1024):
         if i % 2 == 1:
@@ -206,23 +231,27 @@ async def test_download(sid):
     end_time = datetime.now()
     packets_sent = 0
     # For future, grow the payload size based on connection speed to reduce the effect of latency.
+    print("Starting download")
     while (end_time - start_time).total_seconds() < 10:  # Do for 10 seconds
-        print("Emmitting message in test_download")
         await sio.emit("receive_throughput", data=binary_payload, to=sid)
         packets_sent += 1
         end_time = datetime.now()
 
     throughput_kbps = (packets_sent * 1024) / (end_time - start_time).total_seconds()
 
+    print("GOT THROUGHPUT:", throughput_kbps)
+
     await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
 
-
-client_total_bytes = {}
+# client_total_bytes = {}
 
 # @sio.on("test_upload")
 # async def test_upload(sid):
 #     total = 0
 
+
+# @sio.on("test_latency")
+# async def test_latency(sid, timestamp):
 
 @sio.on("disconnect")
 async def disconnect(sid):
