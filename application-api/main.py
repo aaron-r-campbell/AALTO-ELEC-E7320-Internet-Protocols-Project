@@ -108,21 +108,9 @@ app.mount("/", socket_app)
 @sio.on("connect")
 async def connect(sid, env, auth):
     # print("new client connected with session id: " + str(sid))
-<<<<<<< HEAD
     if auth is None:
         raise HTTPException(status_code=400, detail="Missing auth")
     if "token" not in auth:
-=======
-
-    query_args = {
-        key: value
-        for key, value in (
-            pair.split("=") for pair in str(env.get("QUERY_STRING")).split("&")
-        )
-    }
-
-    if "token" not in query_args:
->>>>>>> 50a11c07a9100635608b93d746bdf00deb6b09f0
         raise HTTPException(status_code=400, detail="Missing token")
 
     token = auth["token"]
