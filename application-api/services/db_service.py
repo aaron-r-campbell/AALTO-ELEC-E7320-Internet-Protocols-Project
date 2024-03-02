@@ -16,7 +16,7 @@ async def insert_user_room_mapping(db: Database, user_name: str, room_id: int) -
 
 
 async def check_user_exists(db: Database, username: str) -> bool:
-    query = "SELECT * FROM users WHERE name = :username"
+    query = "SELECT * FROM users WHERE username = :username"
     values = {"username": username}
     response = await db.execute(query=query, values=values)
     return bool(response)
@@ -24,7 +24,7 @@ async def check_user_exists(db: Database, username: str) -> bool:
 
 async def get_user(db: Database, username, password):
     return await db.fetch_one(
-        query="SELECT * FROM users WHERE name = :username AND password = :password",
+        query="SELECT * FROM users WHERE username = :username AND password = :password",
         values={"username": username, "password": password},
     )
 
@@ -43,7 +43,7 @@ async def save_message(db: Database, sender: str, room_id: int, content: str):
 
 
 async def get_messages(db: Database, room_id: int, offset: int = 0):
-    query = "SELECT sender as sender, content, timestamp FROM messages WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 50 OFFSET :offset"
+    query = "SELECT sender as sender, content, timestamp FROM messages WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 50 OFFSET :offset"  # noqa
     values = {"room_id": room_id, "offset": offset}
 
     rows = await db.fetch_all(query=query, values=values)
@@ -55,11 +55,11 @@ async def get_messages(db: Database, room_id: int, offset: int = 0):
     return rows
 
 
-async def get_friendly_name_for_user(db: Database, username):
-    query = "SELECT friendly_name FROM users WHERE name = :username"
-    values = {"username": username}
-    result = await db.fetch_one(query=query, values=values)
-    return result["friendly_name"] if result else None
+# async def get_friendly_name_for_user(db: Database, username):
+#     query = "SELECT friendly_name FROM users WHERE name = :username"
+#     values = {"username": username}
+#     result = await db.fetch_one(query=query, values=values)
+#     return result["friendly_name"] if result else None
 
 
 async def get_user_rooms(db: Database, username) -> List[int]:

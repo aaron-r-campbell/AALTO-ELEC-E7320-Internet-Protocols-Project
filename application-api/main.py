@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from jose import JWTError
 from datetime import datetime
-import json
+# import json
 
 # import asyncpg
 import socketio
@@ -30,6 +30,7 @@ app = FastAPI(lifespan=lifespan)
 @app.post("/token")
 @app.post("/login")
 async def login(request: Request):
+    print("GOT LOGIN REQUEST:", request)
     try:
         data = await request.json()
     except Exception:
@@ -85,21 +86,6 @@ async def create_room(room: Room, username: str = Depends(check_jwt_token)):
         )
 
 
-# moved to socketio
-# @app.get("/messages")
-# async def retrieve_messages(
-#     room_id: int, username: str = Depends(check_jwt_token)
-# ):
-#     try:
-#         if await user_exists_in_room(db, username, room_id):
-#             messages = await get_messages(db, room_id)
-#             print(messages)
-#             return JSONResponse({"messages": json.dumps(messages)}, status_code=200)
-#     except Exception as e:
-#         print(f"an error occurred while retrieving messages: {e}")
-#         return HTTPException(status_code=500)
-
-
 sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
 
 # wrap with ASGI application
@@ -129,12 +115,6 @@ async def authenticate(sid, token):
         session["username"] = username
     print(f"Connection has been made with the user: {username}")
     print(f"Received session token: {token}")
-
-
-# @sio.on("message")
-# async def message(sid, data):
-#     print(f"received message: {data}")
-#     await sio.emit("message", {"data": "foobar"})
 
 
 @sio.on("join_room")
@@ -184,9 +164,6 @@ async def fetch_room_messages(sid, room_id):
         messages = await get_messages(db, room_id)
         print(messages)
 
-    if await user_exists_in_room(db, username, room_id):
-        return JSONResponse({"messages": json.dumps(messages)}, status_code=200)
-
     sio.emit("fetch_room_messages_response", messages, room=sid)
 
 
@@ -208,7 +185,12 @@ async def send_message(sid, message, room_id):
         print("Message has been saved")
 
         # Prepare data to emit
-        data = {"username": username, "message": message}
+        data = {
+            "username": username,
+            "message": message,
+            "timestamp": str(datetime.now()),
+            "message_id": 10  # This needs to be fetched from the database with the save_message function
+        }
 
         # Emit the message to the room
         await sio.emit("receive_msg", data=data, room=room_id, skip_sid=sid)
