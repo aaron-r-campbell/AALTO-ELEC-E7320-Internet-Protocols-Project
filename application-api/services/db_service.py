@@ -1,4 +1,5 @@
 from databases import Database
+from typing import List
 
 
 async def insert_room(db: Database, room_name: str) -> int:
@@ -52,3 +53,20 @@ async def get_messages(db: Database, room_id: int, offset: int = 0):
         row["timestamp"] = row["timestamp"].isoformat()
 
     return rows
+
+
+async def get_friendly_name_for_user(db: Database, username):
+    query = "SELECT friendly_name FROM users WHERE name = :username"
+    values = {"username": username}
+    result = await db.fetch_one(query=query, values=values)
+    return result["friendly_name"] if result else None
+
+
+async def get_user_rooms(db: Database, username) -> List[int]:
+    query = "SELECT room_id FROM user_room_mappings WHERE user_name = :username"
+    values = {"username": username}
+    result = await db.fetch_all(query=query, values=values)
+
+    room_ids = [record["room_id"] for record in result]
+
+    return room_ids

@@ -20,6 +20,10 @@ from services.db_service import (
     get_user,
     insert_room,
     insert_user_room_mapping,
+<<<<<<< HEAD
+=======
+    get_user_rooms
+>>>>>>> example
 )
 
 # FastAPI application
@@ -130,10 +134,10 @@ async def authenticate(sid, token):
     print(f"Received session token: {token}")
 
 
-@sio.on("message")
-async def message(sid, data):
-    print(f"received message: {data}")
-    await sio.emit("message", {"data": "foobar"})
+# @sio.on("message")
+# async def message(sid, data):
+#     print(f"received message: {data}")
+#     await sio.emit("message", {"data": "foobar"})
 
 
 @sio.on("join_room")
@@ -159,6 +163,16 @@ async def join_room(sid, room_id):
     except Exception as e:
         print(f"Exception occurred while joining a room: {e}")
         await sio.emit("error", "Error occurred while joining a room")
+
+
+@sio.on("get_user_rooms")
+async def get_user_chats(sid, _):
+    print("get_user_rooms sid:", sid)
+    async with sio.session(sid) as session:
+        username = session["username"]
+        rooms = await get_user_rooms(db=db, username=username)
+        print("ROOMS:", rooms)
+        await sio.emit("return_user_rooms", rooms, to=sid)
 
 
 @sio.on("fetch_room_messages")

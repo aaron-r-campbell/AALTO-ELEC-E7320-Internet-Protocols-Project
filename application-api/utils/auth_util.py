@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException
 from dotenv import load_dotenv
 import os
-from datetime import datetime, timedelta
+
 
 load_dotenv()
 
@@ -20,7 +20,7 @@ def create_jwt_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (
         expires_delta
-        if expires_delta != None
+        if expires_delta is not None
         else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     to_encode.update({"exp": expire})
