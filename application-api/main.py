@@ -212,7 +212,36 @@ async def test_download(sid):
     await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
 
 
-client_total_bytes = {}
+# placeholder
+@sio.on("fetch_room_messages")
+async def fetch_room_messages(sid, room_id):
+    msgs = {
+            "messages": [
+                {
+                    "timestamp": "2024-03-02T12:00:00Z",
+                    "username": "user1",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "timestamp": "2024-03-02T12:05:00Z",
+                    "username": "user2",
+                    "content": "I'm good, thanks for asking!"
+                },
+                {
+                    "timestamp": "2024-03-02T12:10:00Z",
+                    "username": "user1",
+                    "content": "Would you like to join me for lunch?"
+                },
+                {
+                    "timestamp": "2024-03-02T12:15:00Z",
+                    "username": "user2",
+                    "content": "Sure, where should we meet?"
+                }
+            ]
+        }
+    sio.emit("fetch_room_messages_response", msgs, room=sid)
+
+# client_total_bytes = {}
 
 # @sio.on("test_upload")
 # async def test_upload(sid):
