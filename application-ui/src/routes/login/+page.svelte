@@ -2,6 +2,7 @@
 	import { goto } from "$app/navigation";
 	import axios from "axios";
 	import io from "socket.io-client";
+	import { state } from "../../stores/state_store.js";
 
 	let username = "",
 		password = "";
@@ -14,26 +15,30 @@
 		);
 
 		if (response.status === 200) {
+			// Set axios bearer token header for use with withCredentials
 			axios.defaults.headers.common["Authorization"] =
-				`Bearer ${response.data.token}`;
-			console.log("set to", axios.defaults.headers.common["Authorization"]);
+				`Bearer ${state.token}`;
 
-			response.data.token;
+			// Setup socket connection
 			const socket = io("http://localhost:7777", {
 				auth: { token: response.data.token },
 			});
 
-			socket.on("connect", () => {
-				console.log("Socket.io connected");
+			// Update
+			state.set({
+				...state,
+				token: response.data.token,
+				socket: socket,
 			});
 
+			// Logged in, go back to the main page.
 			goto("/");
 		}
 	};
 </script>
 
 <form on:submit|preventDefault={submit}>
-	<h1>Please sign in</h1>
+	<h1>Sign in:</h1>
 
 	<br />
 
