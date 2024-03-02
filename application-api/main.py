@@ -19,7 +19,7 @@ from services.db_service import (
     get_user,
     insert_room,
     insert_user_room_mapping,
-    get_friendly_name_for_user,
+    get_user_rooms
 )
 
 # FastAPI application
@@ -57,11 +57,7 @@ async def login(request: Request):
 async def whoami(
     current_user: str = Depends(check_jwt_token),
 ):
-    friendly_name = await get_friendly_name_for_user(db, current_user)
-    return {
-        "username": current_user,
-        "friendly_name": friendly_name,
-    }
+    return {"username": current_user}
 
 
 @app.post("/create_chat_room")
@@ -136,10 +132,10 @@ async def authenticate(sid, token):
     print(f"Received session token: {token}")
 
 
-@sio.on("message")
-async def message(sid, data):
-    print(f"received message: {data}")
-    await sio.emit("message", {"data": "foobar"})
+# @sio.on("message")
+# async def message(sid, data):
+#     print(f"received message: {data}")
+#     await sio.emit("message", {"data": "foobar"})
 
 
 @sio.on("join_room")
@@ -165,6 +161,16 @@ async def join_room(sid, room_id):
     except Exception as e:
         print(f"Exception occurred while joining a room: {e}")
         await sio.emit("error", "Error occurred while joining a room")
+
+
+@sio.on("get_user_rooms")
+async def get_user_chats(sid, _):
+    print("get_user_rooms sid:", sid)
+    async with sio.session(sid) as session:
+        username = session["username"]
+        rooms = await get_user_rooms(db=db, username=username)
+        print("ROOMS:", rooms)
+        await sio.emit("return_user_rooms", rooms, to=sid)
 
 
 @sio.on("fetch_room_messages")
@@ -243,6 +249,7 @@ async def test_download(sid, _):
 
     await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
 
+
 # client_total_bytes = {}
 
 # @sio.on("test_upload")
@@ -252,6 +259,7 @@ async def test_download(sid, _):
 
 # @sio.on("test_latency")
 # async def test_latency(sid, timestamp):
+
 
 @sio.on("disconnect")
 async def disconnect(sid):
