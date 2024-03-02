@@ -20,10 +20,7 @@ from services.db_service import (
     get_user,
     insert_room,
     insert_user_room_mapping,
-<<<<<<< HEAD
-=======
     get_user_rooms
->>>>>>> example
 )
 
 # FastAPI application
