@@ -2,24 +2,24 @@
     import axios from "axios";
     import { onMount } from "svelte";
 
-    let friendly_name = "";
+    export let user;
 
-    const get_friendly_name = async () => {
+    const get_username = async () => {
         const response = await axios.get(
             "/api/whoami",
             {},
             { withCredentials: true },
         );
-        friendly_name = response.data.friendly_name;
+        user.username = response.data.username;
     };
 
     onMount(async () => {
-        get_friendly_name();
+        get_username();
     });
 </script>
 
 <div id="current-user-info">
-    <p>{friendly_name}</p>
+    <p>{user.username}</p>
 </div>
 
 <style>

@@ -1,8 +1,6 @@
 <script>
     import Message from "../components/Message.svelte";
-
-    export let current_user = "user1";
-
+    export let user;
     let messages = [
         {
             sender: "Alice",
@@ -56,7 +54,7 @@
 <div>
     {#each messages as message}
         <Message
-            bind:current_user
+            bind:current_user={user.username}
             bind:sender={message.sender}
             bind:content={message.content}
             bind:timestamp={message.timestamp}

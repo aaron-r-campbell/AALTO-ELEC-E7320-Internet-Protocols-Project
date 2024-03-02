@@ -2,18 +2,20 @@
     import ChatSelector from "../components/ChatSelector.svelte";
     import UserInfo from "../components/UserInfo.svelte";
     import Chat from "../components/Chat.svelte";
+
+    let user;
 </script>
 
 <div id="app">
     <div id="sidebar">
-        <UserInfo />
+        <UserInfo bind:user />
         <ChatSelector />
     </div>
-    <div id="chats"><Chat /></div>
+    <div id="chats"><Chat bind:user /></div>
 </div>
 
 <!-- 
-<h1>Welcome {friendly_name}!</h1>
+<h1>Welcome {username}!</h1>
 <div style="display:flex;">
     <div style="width: 20vw; background-color: lightgray;">
         <h1>Chats:</h1>

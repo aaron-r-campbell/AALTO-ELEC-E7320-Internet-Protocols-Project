@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
+
 # from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import JSONResponse
 from jose import JWTError
@@ -19,7 +20,6 @@ from services.db_service import (
     get_user,
     insert_room,
     insert_user_room_mapping,
-    get_friendly_name_for_user,
 )
 
 # FastAPI application
@@ -57,17 +57,11 @@ async def login(request: Request):
 async def whoami(
     current_user: str = Depends(check_jwt_token),
 ):
-    friendly_name = await get_friendly_name_for_user(db, current_user)
-    return {
-        "username": current_user,
-        "friendly_name": friendly_name,
-    }
+    return {"username": current_user}
 
 
 @app.post("/create_chat_room")
-async def create_room(
-    room: Room, username: str = Depends(check_jwt_token)
-):
+async def create_room(room: Room, username: str = Depends(check_jwt_token)):
     transaction = await db.transaction()
     try:
         # create a room
@@ -199,9 +193,7 @@ async def send_message(sid, message, room_id):
             raise Exception("no permission to send messages to the room")
 
         # Save the message
-        await save_message(
-            db=db, sender_name=username, room_id=room_id, message=message
-        )
+        await save_message(db, username, room_id, message)
         print("Message has been saved")
 
         # Prepare data to emit
@@ -243,6 +235,7 @@ async def test_download(sid, _):
 
     await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
 
+
 # client_total_bytes = {}
 
 # @sio.on("test_upload")
@@ -252,6 +245,7 @@ async def test_download(sid, _):
 
 # @sio.on("test_latency")
 # async def test_latency(sid, timestamp):
+
 
 @sio.on("disconnect")
 async def disconnect(sid):

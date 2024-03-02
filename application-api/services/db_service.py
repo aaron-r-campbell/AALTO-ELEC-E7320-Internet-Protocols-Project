@@ -35,27 +35,20 @@ async def user_exists_in_room(db: Database, username: str, room_id: int) -> bool
     return bool(response)
 
 
-async def save_message(db: Database, sender_name: str, room_id: int, message: str):
-    query = "INSERT INTO messages (sender_name, room_id, message) VALUES (:sender_name, :room_id, :message)"
-    values = {"sender_name": sender_name, "room_id": room_id, "message": message}
+async def save_message(db: Database, sender: str, room_id: int, content: str):
+    query = "INSERT INTO messages (sender, room_id, content) VALUES (:sender, :room_id, :content)"
+    values = {"sender": sender, "room_id": room_id, "content": content}
     await db.execute(query=query, values=values)
 
 
 async def get_messages(db: Database, room_id: int, offset: int = 0):
-    query = "SELECT sender_name as sender, message, sent FROM messages WHERE room_id = :room_id ORDER BY sent DESC LIMIT 50 OFFSET :offset"
+    query = "SELECT sender as sender, content, timestamp FROM messages WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 50 OFFSET :offset"
     values = {"room_id": room_id, "offset": offset}
 
     rows = await db.fetch_all(query=query, values=values)
     # Return the list of messages
     rows = [dict(row) for row in rows]
     for row in rows:
-        row["sent"] = row["sent"].isoformat()
+        row["timestamp"] = row["timestamp"].isoformat()
 
     return rows
-
-
-async def get_friendly_name_for_user(db: Database, username):
-    query = "SELECT friendly_name FROM users WHERE name = :username"
-    values = {"username": username}
-    result = await db.fetch_one(query=query, values=values)
-    return result["friendly_name"] if result else None

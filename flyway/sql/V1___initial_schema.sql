@@ -1,9 +1,8 @@
 CREATE TABLE users (
-    name TEXT NOT NULL PRIMARY KEY UNIQUE,
+    username TEXT NOT NULL PRIMARY KEY UNIQUE,
     password TEXT NOT NULL,
-    friendly_name TEXT NOT NULL,
     active BOOLEAN NOT NULL DEFAULT FALSE,
-    lastSeen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE rooms (
@@ -12,17 +11,17 @@ CREATE TABLE rooms (
 );
 
 CREATE TABLE user_room_mappings (
-    user_name TEXT REFERENCES users(name),
+    user_name TEXT REFERENCES users(username),
     room_id INT REFERENCES rooms(id),
     PRIMARY KEY (user_name, room_id)
 );
 
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
-    sender_name TEXT REFERENCES users(name),
+    sender TEXT REFERENCES users(username),
     room_id INT REFERENCES rooms(id),
-    message TEXT NOT NULL,
-    sent TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    content TEXT NOT NULL,
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE files (
