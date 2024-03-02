@@ -2,6 +2,7 @@ version: "3.4"
 
 volumes:
   ui_volume:
+  files:
 
 services:
   nginx:
@@ -20,6 +21,7 @@ services:
     restart: "no"
     volumes:
       - ./application-api/:/app
+      - files:/files
     ports:
       - 7777:7777
     depends_on:
