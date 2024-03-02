@@ -19,13 +19,9 @@
 			console.log("set to", axios.defaults.headers.common["Authorization"]);
 
 			response.data.token;
-			const socket = io("http://localhost:7777", {
-				auth: { token: response.data.token },
-			});
+			const socket = io("http://localhost:7777");
 
-			socket.on("connect", () => {
-				console.log("Socket.io connected");
-			});
+			socket.emit("authenticate", response.data.token);
 
 			goto("/");
 		}
