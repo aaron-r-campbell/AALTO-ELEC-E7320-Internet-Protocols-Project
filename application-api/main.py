@@ -19,6 +19,7 @@ from services.db_service import (
     get_user,
     insert_room,
     insert_user_room_mapping,
+    get_friendly_name_for_user,
 )
 
 # FastAPI application
@@ -55,7 +56,11 @@ async def login(request: Request):
 async def whoami(
     current_user: str = Depends(check_jwt_token),
 ):
-    return {"username": current_user}
+    friendly_name = await get_friendly_name_for_user(db, current_user)
+    return {
+        "username": current_user,
+        "friendly_name": friendly_name,
+    }
 
 
 @app.post("/create_chat_room")

@@ -52,3 +52,10 @@ async def get_messages(db: Database, room_id: int, offset: int = 0):
         row["sent"] = row["sent"].isoformat()
 
     return rows
+
+
+async def get_friendly_name_for_user(db: Database, username):
+    query = "SELECT friendly_name FROM users WHERE name = :username"
+    values = {"username": username}
+    result = await db.fetch_one(query=query, values=values)
+    return result["friendly_name"] if result else None
