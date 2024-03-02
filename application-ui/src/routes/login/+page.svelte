@@ -1,35 +1,21 @@
 <script>
-	import { goto } from "$app/navigation";
 	import axios from "axios";
-	import io from "socket.io-client";
+	import { goto } from "$app/navigation";
 	import { state } from "../../stores/state_store.js";
 
 	let username = "",
 		password = "";
 
 	const submit = async () => {
-		const response = await axios.post(
-			"/api/login",
-			{ username, password },
-			{ withCredentials: true },
-		);
+		const response = await axios.post("/api/login", { username, password });
 
 		if (response.status === 200) {
+			// Update the token
+			state.set({ ...$state, token: response.data.token });
+
 			// Set axios bearer token header for use with withCredentials
 			axios.defaults.headers.common["Authorization"] =
-				`Bearer ${state.token}`;
-
-			// Setup socket connection
-			const socket = io("http://localhost:7777", {
-				auth: { token: response.data.token },
-			});
-
-			// Update
-			state.set({
-				...state,
-				token: response.data.token,
-				socket: socket,
-			});
+				`Bearer ${$state.token}`;
 
 			// Logged in, go back to the main page.
 			goto("/");

@@ -6,11 +6,11 @@
     import Spinner from "../components/Spinner.svelte";
 
     onMount(() => {
-        if (!state.token) goto("/login");
+        if (!$state.token) goto("/login");
     });
 </script>
 
-{#if !state.token}
+{#if !$state.token}
     <Spinner />
 {:else}
     <App />

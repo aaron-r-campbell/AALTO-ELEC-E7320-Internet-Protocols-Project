@@ -1,18 +1,7 @@
 <script>
     import Message from "../components/Message.svelte";
 
-    export let current_user = "";
-
-    const get_messages = async (chat_room_id) => {
-        const response = await axios.get(
-            `/api/messages?${chat_room_id}`,
-            {},
-            { withCredentials: true },
-        );
-
-        const response_json = await response.json();
-        console.log(response_json);
-    };
+    export let current_user = "user1";
 
     let messages = [
         {
