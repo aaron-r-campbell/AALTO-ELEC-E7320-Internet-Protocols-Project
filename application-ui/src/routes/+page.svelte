@@ -14,16 +14,22 @@
         } else if (!$state.socket) {
             const socket = io("http://localhost:7777");
 
+            // Run on authenticate response
+            socket.on("authenticate_ack", (data) => {
+                console.log("Auth_ack received", data);
+                if (data?.successful) {
+                    console.log("Authentication successful");
+                    state.set({ ...$state, socket });
+                    isLoading = false;
+                } else {
+                    console.error("Socket error: ", data?.description);
+                    reject(data?.description);
+                }
+            });
+
             socket.on("connect", () => {
+                console.log("connection established");
                 socket.emit("authenticate", $state.token);
-
-                socket.on("error_event", (error) => {
-                    console.error("Socket error: ", error);
-                    reject(error);
-                });
-
-                state.set({ ...$state, socket });
-                isLoading = false;
             });
         } else {
             isLoading = false;

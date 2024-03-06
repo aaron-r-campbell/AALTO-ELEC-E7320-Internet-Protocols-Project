@@ -1,4 +1,6 @@
 <script>
+    // import { state } from "../stores/state_store.js";
+    // import { onMount } from "svelte";
     import Message from "../components/Message.svelte";
     export let user = {};
     let messages = [
@@ -48,6 +50,35 @@
             timestamp: new Date("2024-02-24T10:23:15"),
         },
     ];
+
+    // const getRoomMessages = () => {
+    //     return new Promise((resolve, reject) => {
+    //         console.log("Getting room messages");
+    //         $state.socket.emit("fetch_room_messages");
+
+    //         $state.socket.on("fetch_room_messages_response", (data) => {
+    //             if (data?.successful) {
+    //                 resolve(data.messages);
+    //             } else {
+    //                 console.error(
+    //                     "Error in fetching room messages:",
+    //                     data?.description,
+    //                 );
+    //                 reject(data?.description);
+    //             }
+    //         });
+    //     });
+    // };
+
+    // onMount(async () => {
+    //     try {
+    //         console.log("getting user messages");
+    //         messages = await getRoomMessages();
+    //         console.log("Fetched messages:", messages);
+    //     } catch (error) {
+    //         console.error("Error fetching user chats:", error);
+    //     }
+    // });
 </script>
 
 <h1>Chat Name</h1>

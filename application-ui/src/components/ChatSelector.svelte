@@ -16,7 +16,7 @@
 
     onMount(async () => {
         try {
-            console.log('getting user rooms');
+            console.log("getting user rooms");
             rooms = await getUserRooms();
             console.log("Fetched rooms:", rooms);
         } catch (error) {
@@ -26,8 +26,8 @@
 </script>
 
 <ul id="chats-list">
-    {#each rooms as chat}
-        <li>{chat}</li>
+    {#each rooms as room}
+        <li>{room.room_name}</li>
     {/each}
 </ul>
 

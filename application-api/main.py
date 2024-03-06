@@ -98,6 +98,10 @@ async def connect(sid, env):
     # print("THIS IS THE ENV:", env)
     print("new client connected with session id: " + str(sid))
 
+    """Apparently socketio does automatically send a "connect" event on succesful connect so this isn't needed"""
+    # payload = {"successful": True, "description": "Connection successful"}
+    # await sio.emit("connect_ack", payload, to=sid)
+
 
 @sio.on("authenticate")
 async def authenticate(sid, token):
@@ -105,16 +109,30 @@ async def authenticate(sid, token):
         raise HTTPException(status_code=400, detail="Missing token")
 
     # Validate the token and add the username to the user session.
-    username = check_jwt_token(token)
+    try:
+        username = check_jwt_token(token)
+        print(f"Authenticate received session token: {token}")
 
-    """
-    A user is authenticated if their username is in the session["username"].
-    In the future, the username should be accessed through this.
-    """
-    async with sio.session(sid) as session:
-        session["username"] = username
-    print(f"Connection has been made with the user: {username}")
-    print(f"Received session token: {token}")
+        """
+        A user is authenticated if their username is in the session["username"].
+        In the future, the username should be accessed through this.
+        """
+        async with sio.session(sid) as session:
+            print("In sio session section")
+            session["username"] = username
+            payload = {"successful": True, "description": "Authentication successful"}
+            await sio.emit("authenticate_ack", payload, to=sid)
+            print(f"Connection has been made with the user: {username}")
+
+    except JWTError as e:
+        payload = {"successful": False, "description": "Authentication failed"}
+        await sio.emit("authenticate_ack", payload, to=sid)
+        print(f"Authentication JWTError: {e}")
+
+    except Exception as e:
+        payload = {"successful": False, "description": "Authentication failed"}
+        await sio.emit("authenticate_ack", payload, to=sid)
+        print(f"Unknown error in authenticate {e}")
 
 
 @sio.on("join_room")
@@ -129,17 +147,21 @@ async def join_room(sid, room_id):
                 raise Exception("No permission to join the room")
 
         await sio.enter_room(sid, room_id)
-        await sio.emit("join_room", "You have joined the room successfully", room=sid)
+        payload = {"successful": True, "description": "Room joined succesfully"}
+        await sio.emit("join_room_ack", payload, to=sid)
 
     except ValueError:
-        await sio.emit("error", "Invalid room ID")
+        payload = {"successful": False, "description": "Invalid room ID"}
+        await sio.emit("join_room_ack", payload, to=sid)
 
     except KeyError:
-        await sio.emit("error", "No username found in session")
+        payload = {"successful": False, "description": "No username found in session"}
+        await sio.emit("join_room_ack", payload, to=sid)
 
     except Exception as e:
         print(f"Exception occurred while joining a room: {e}")
-        await sio.emit("error", "Error occurred while joining a room")
+        payload = {"successful": False, "description": "Error occurred while joining a room"}
+        await sio.emit("join_room_ack", payload, to=sid)
 
 
 @sio.on("get_user_rooms")
@@ -160,11 +182,19 @@ async def fetch_room_messages(sid, room_id):
     async with sio.session(sid) as session:
         username = session["username"]
         if not await user_exists_in_room(db, username, room_id):
+            payload = {"successful": False, "description": "User is not in the room"}
+            sio.emit("fetch_room_messages_response", payload, to=sid)
             raise Exception("No permission to join the room")
         messages = await get_messages(db, room_id)
+
+        payload = {
+            "successful": True,
+            "description": "",
+            "messages": messages
+        }
         print(messages)
 
-    sio.emit("fetch_room_messages_response", messages, room=sid)
+    sio.emit("fetch_room_messages_response", payload, room=sid)
 
 
 @sio.on("send_msg")
