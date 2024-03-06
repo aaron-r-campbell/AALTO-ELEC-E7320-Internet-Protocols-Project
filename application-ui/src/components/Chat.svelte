@@ -1,6 +1,6 @@
 <script>
     import Message from "../components/Message.svelte";
-    export let user;
+    export let user = {};
     let messages = [
         {
             sender: "Alice",

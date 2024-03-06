@@ -1,21 +1,13 @@
 <script>
     import { onMount } from "svelte";
     import { state } from "../stores/state_store.js";
-    import io from "socket.io-client";
     import ChatSelector from "../components/ChatSelector.svelte";
     import UserInfo from "../components/UserInfo.svelte";
     import Chat from "../components/Chat.svelte";
 
-    let user;
+    let user = {};
 
     onMount(() => {
-        // Initialize socket if not already done.
-        if (!$state.socket) {
-            state.set({
-                ...$state,
-                socket: io("/api", { auth: { token: $state.token } }),
-            });
-        }
     });
 </script>
 

@@ -1,34 +1,36 @@
 <script>
     import axios from "axios";
     import { onMount } from "svelte";
+    import { state } from "../stores/state_store";
 
-    export let user;
+    export let user = {};
 
-    const get_username = async () => {
-        const response = await axios.get(
-            "/api/whoami",
-            {},
-            { withCredentials: true },
-        );
-        user.username = response.data.username;
+    const get_username = () => {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await axios.get("/api/whoami", {
+                    withCredentials: true,
+                });
+                resolve(response.data.username);
+            } catch (error) {
+                reject(error);
+            }
+        });
     };
 
     onMount(async () => {
-        get_username();
+        try {
+            user.username = await get_username();
+        } catch (error) {
+            console.error("Error fetching username:", error);
+        }
     });
 </script>
 
 <div id="current-user-info">
-    <p>{user.username}</p>
+    {#if user?.username}
+        <h1>{user.username}</h1>
+    {:else}
+        <h1>Loading...</h1>
+    {/if}
 </div>
-
-<style>
-    #current-user-info {
-        text-align: center;
-        padding: 10px;
-        background-color: #3498db;
-        color: white;
-        font-weight: bold;
-        margin-bottom: 20px;
-    }
-</style>

@@ -1,10 +1,33 @@
 <script>
-    let chats = [{ name: "Chat 1" }, { name: "Chat 2" }, { name: "Chat 3" }];
+    import { onMount } from "svelte";
+    import { state } from "../stores/state_store.js";
+
+    let rooms = [];
+
+    const getUserRooms = () => {
+        return new Promise((resolve, reject) => {
+            $state.socket.emit("get_user_rooms");
+
+            $state.socket.on("return_user_rooms", (rooms) => {
+                resolve(rooms);
+            });
+        });
+    };
+
+    onMount(async () => {
+        try {
+            console.log('getting user rooms');
+            rooms = await getUserRooms();
+            console.log("Fetched rooms:", rooms);
+        } catch (error) {
+            console.error("Error fetching user chats:", error);
+        }
+    });
 </script>
 
 <ul id="chats-list">
-    {#each chats as chat}
-        <li>{chat.name}</li>
+    {#each rooms as chat}
+        <li>{chat}</li>
     {/each}
 </ul>
 

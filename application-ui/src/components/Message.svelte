@@ -21,12 +21,6 @@
 </div>
 
 <style>
-    .chat-message {
-        margin-bottom: 15px;
-        padding: 10px 20px;
-        border-radius: 5px;
-        background-color: #ecf0f1; /* Message background color */
-    }
     .message-container {
         width: 100%;
         display: flex;
@@ -39,6 +33,7 @@
         padding: 10px;
         border-radius: 8px;
         word-wrap: break-word;
+        background-color: #ecf0f1; /* Message background color */
     }
 
     .own-message {

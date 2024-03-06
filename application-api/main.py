@@ -143,7 +143,7 @@ async def join_room(sid, room_id):
 
 
 @sio.on("get_user_rooms")
-async def get_user_chats(sid, _):
+async def get_user_chats(sid, _=None):
     print("get_user_rooms sid:", sid)
     async with sio.session(sid) as session:
         username = session["username"]
