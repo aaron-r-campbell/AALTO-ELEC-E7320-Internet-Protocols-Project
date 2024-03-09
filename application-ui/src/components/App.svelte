@@ -4,6 +4,7 @@
     import ChatSelector from "../components/ChatSelector.svelte";
     import UserInfo from "../components/UserInfo.svelte";
     import Chat from "../components/Chat.svelte";
+    import ChatInput from "../components/ChatInput.svelte";
 
     let user = {};
     let selectedRoomID = null;
@@ -12,6 +13,7 @@
         console.log("CHANGING TO ROOM", roomID);
         selectedRoomID = roomID;
     }
+    console.log("hello");
 </script>
 
 <div id="app">
@@ -20,9 +22,12 @@
         <ChatSelector {handleRoomSelection} />
     </div>
     <div id="chats">
-        {#if selectedRoomID !== null}
-            <Chat {user} {selectedRoomID} />
-        {/if}
+        <div id="chat-container">
+            {#if selectedRoomID !== null}
+                <Chat {user} {selectedRoomID} />
+            {/if}
+        </div>
+        <ChatInput {user} {selectedRoomID} />
     </div>
 </div>
 
@@ -39,6 +44,10 @@
         overflow-y: auto;
         padding: 20px;
         background-color: #ecf0f1; /* Light background color */
+    }
+
+    #chat-container {
+        flex: 1; /* Grow to fill remaining space */
     }
 
     #sidebar {
