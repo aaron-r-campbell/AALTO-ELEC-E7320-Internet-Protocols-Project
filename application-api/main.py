@@ -185,7 +185,7 @@ async def fetch_room_messages(sid, room_id):
         if not await user_exists_in_room(db, username, room_id):
             print("User not in room")
             payload = {"successful": False, "description": "User is not in the room"}
-            sio.emit("fetch_room_messages_response", payload, to=sid)
+            await sio.emit("fetch_room_messages_response", payload, to=sid)
             raise Exception("No permission to join the room")
 
         messages = await get_messages(db, room_id)
@@ -196,7 +196,7 @@ async def fetch_room_messages(sid, room_id):
         }
 
         print(messages)
-        sio.emit("fetch_room_messages_response", payload, to=sid)
+        await sio.emit("fetch_room_messages_response", payload, to=sid)
 
 
 @sio.on("send_msg")

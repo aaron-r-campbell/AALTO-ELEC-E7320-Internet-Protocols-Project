@@ -3,30 +3,19 @@
     import Message from "../components/Message.svelte";
     export let user = {};
     export let selectedRoomID = null;
-    console.log("In Chat.svelte:", user, selectedRoomID);
-    let messages = [
-        {
-            sender: "Alice",
-            content: "Hey, how are you?",
-            timestamp: new Date("2024-02-24T10:15:00"),
-        },
-        {
-            sender: "Bob",
-            content: "I'm good, thanks! How about you?",
-            timestamp: new Date("2024-02-24T10:16:30"),
-        },
-    ];
+    let messages = [];
 
     const getRoomMessages = () => {
         return new Promise((resolve, reject) => {
             console.log("Fetching room messages");
-            console.log("SOCKET IS:", $state.socket);
             $state.socket.emit("fetch_room_messages", selectedRoomID);
 
             $state.socket.on("fetch_room_messages_response", (data) => {
-                console.log("Got response from server", data);
+                // console.log("Got response from server", data);
                 if (data?.successful) {
-                    console.log("Fetched messages:", data.messages);
+                    data.messages.map((m) => {
+                        m.timestamp = new Date(m.timestamp);
+                    });
                     resolve(data.messages);
                 } else {
                     console.error(
@@ -45,9 +34,7 @@
                 console.log("Null user. Waiting for update");
                 return;
             }
-            console.log("getting user messages");
             messages = await getRoomMessages();
-            console.log("Fetched messages:", messages);
         } catch (error) {
             console.error("Error fetching user chats:", error);
         }
@@ -55,6 +42,16 @@
 
     $: selectedRoomID, fetchMessages();
 
+    // {
+    //     sender: "Alice",
+    //     content: "Hey, how are you?",
+    //     timestamp: new Date("2024-02-24T10:15:00"),
+    // },
+    // {
+    //     sender: "Bob",
+    //     content: "I'm good, thanks! How about you?",
+    //     timestamp: new Date("2024-02-24T10:16:30"),
+    // },
     // {
     //     sender: "Alice",
     //     content: "I'm doing well too, just had a busy day at work.",
