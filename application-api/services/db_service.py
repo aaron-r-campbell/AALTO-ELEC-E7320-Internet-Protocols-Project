@@ -62,7 +62,7 @@ async def get_messages(db: Database, room_id: int, offset: int = 0):
 #     return result["friendly_name"] if result else None
 
 
-async def get_user_rooms(db: Database, username) -> List[int]:
+async def get_user_rooms(db: Database, username):
     query = "SELECT rooms.id AS room_id, rooms.name AS room_name FROM user_room_mappings, rooms WHERE rooms.id = user_room_mappings.room_id AND user_name = :username" # noqa
     values = {"username": username}
     result = await db.fetch_all(query=query, values=values)
@@ -75,3 +75,18 @@ async def get_user_rooms(db: Database, username) -> List[int]:
         for record in result]
 
     return room_ids
+
+
+async def get_all_user_room_mappings(db: Database) -> List[int]:
+    query = "SELECT user_name, room_id FROM user_room_mappings" # noqa
+
+    result = await db.fetch_all(query=query)
+
+    mappings = [
+        {
+            "room_id": record["room_id"],
+            "user_name": record["user_name"]
+         }
+        for record in result]
+
+    return mappings

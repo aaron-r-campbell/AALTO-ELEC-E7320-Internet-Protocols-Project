@@ -10,6 +10,9 @@
             console.log("Fetching room messages");
             $state.socket.emit("fetch_room_messages", selectedRoomID);
 
+            // Don't fetch messages for the other chats that might have been previously open
+            $state.socket.off("fetch_room_messages_response");
+
             $state.socket.on("fetch_room_messages_response", (data) => {
                 // console.log("Got response from server", data);
                 if (data?.successful) {
@@ -35,6 +38,35 @@
                 return;
             }
             messages = await getRoomMessages();
+
+            $state.socket.off("receive_msg");
+
+            $state.socket.on("receive_msg", (data) => {
+                console.log("Received message from room", data.room_id);
+                if (data.room_id !== selectedRoomID) {
+                    reject("Not in currently selected room");
+                }
+
+                if (data?.successful) {
+                    const new_message = data.data;
+
+                    new_message.timestamp = new Date(data.data.timestamp);
+
+                    console.log(
+                        "Updating the messages array with",
+                        new_message,
+                    );
+
+                    messages = [...messages, new_message];
+                    console.log("Current messages:", messages);
+                } else {
+                    console.error(
+                        "Error in fetching room messages:",
+                        data?.description,
+                    );
+                    throw new Error(data?.description);
+                }
+            });
         } catch (error) {
             console.error("Error fetching user chats:", error);
         }

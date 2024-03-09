@@ -20,7 +20,8 @@ from services.db_service import (
     get_user,
     insert_room,
     insert_user_room_mapping,
-    get_user_rooms
+    get_user_rooms,
+    # get_all_user_room_mappings
 )
 
 # FastAPI application
@@ -124,6 +125,13 @@ async def authenticate(sid, token):
             await sio.emit("authenticate_ack", payload, to=sid)
             print(f"Connection has been made with the user: {username}")
 
+            # Register sid to rooms that the user already is a prt of
+            user_rooms = await get_user_rooms(db, username)
+            print("Registering user to rooms:", user_rooms)
+            for mapping in user_rooms:
+                await sio.enter_room(sid, mapping["room_id"])
+            print("Done in authenticate")
+
     except JWTError as e:
         payload = {"successful": False, "description": "Authentication failed"}
         await sio.emit("authenticate_ack", payload, to=sid)
@@ -210,6 +218,12 @@ async def send_message(sid, message, room_id):
         username = session["username"]
 
         if not await user_exists_in_room(db, username, room_id):
+            payload = {
+                "successful": False,
+                "description": "User is not in the room",
+                "data": None
+            }
+            await sio.emit("receive_msg", data=payload, to=sid)
             raise Exception("no permission to send messages to the room")
 
         # Save the message
@@ -221,11 +235,21 @@ async def send_message(sid, message, room_id):
             "username": username,
             "message": message,
             "timestamp": str(datetime.now()),
-            "message_id": 10  # This needs to be fetched from the database with the save_message function
+            "message_id": 10,  # This needs to be fetched from the database with the save_message function
         }
 
+        payload = {
+            "successful": True,
+            "description": "",
+            "data": data,
+            "room_id": room_id
+        }
+
+        print("Sending payload", payload)
+
         # Emit the message to the room
-        await sio.emit("receive_msg", data=data, room=room_id, skip_sid=sid)
+        await sio.emit("receive_msg", data=payload, room=room_id)
+        print("Sent payload")
 
     except ValueError as ve:
         print(f"ValueError: {ve}")
@@ -276,6 +300,10 @@ async def test_download(sid, _):
 async def disconnect(sid):
     print("client disconnected: " + str(sid))
 
+
+# async def add_users_to_rooms():
+#     mapping = await get_all_user_room_mappings(db)
+#     print("ROOMS:", mapping)
 
 if __name__ == "__main__":
     import uvicorn
