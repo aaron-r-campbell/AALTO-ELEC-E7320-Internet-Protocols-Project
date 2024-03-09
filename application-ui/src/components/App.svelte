@@ -6,17 +6,24 @@
     import Chat from "../components/Chat.svelte";
 
     let user = {};
+    let selectedRoomID = null;
 
-    onMount(() => {
-    });
+    function handleRoomSelection(roomID) {
+        console.log("CHANGING TO ROOM", roomID);
+        selectedRoomID = roomID;
+    }
 </script>
 
 <div id="app">
     <div id="sidebar">
         <UserInfo bind:user />
-        <ChatSelector />
+        <ChatSelector {handleRoomSelection} />
     </div>
-    <div id="chats"><Chat bind:user /></div>
+    <div id="chats">
+        {#if selectedRoomID !== null}
+            <Chat {user} {selectedRoomID} />
+        {/if}
+    </div>
 </div>
 
 <style>

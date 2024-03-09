@@ -3,6 +3,7 @@
     import { state } from "../stores/state_store.js";
 
     let rooms = [];
+    export let handleRoomSelection;
 
     const getUserRooms = () => {
         return new Promise((resolve, reject) => {
@@ -27,7 +28,14 @@
 
 <ul id="chats-list">
     {#each rooms as room}
-        <li>{room.room_name}</li>
+        <li>
+            <button
+                type="button"
+                on:click={() => handleRoomSelection(room.room_id)}
+            >
+                {room.room_name}
+            </button>
+        </li>
     {/each}
 </ul>
 
