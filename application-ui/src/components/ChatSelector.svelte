@@ -5,20 +5,22 @@
     let rooms = [];
     export let handleRoomSelection;
 
-    const getUserRooms = () => {
-        return new Promise((resolve, reject) => {
-            $state.socket.emit("get_user_rooms");
+    // const getUserRooms = () => {
+    //     return new Promise((resolve, reject) => {
 
-            $state.socket.on("return_user_rooms", (rooms) => {
-                resolve(rooms);
-            });
-        });
-    };
+    //     });
+    // };
 
     onMount(async () => {
         try {
             console.log("getting user rooms");
-            rooms = await getUserRooms();
+            // rooms = await getUserRooms();
+            $state.socket.emit("get_user_rooms");
+
+            // We keep the listener as when a user is invited to a room, the same message is sent
+            $state.socket.on("return_user_rooms", (new_rooms) => {
+                rooms = new_rooms;
+            });
             console.log("Fetched rooms:", rooms);
         } catch (error) {
             console.error("Error fetching user chats:", error);

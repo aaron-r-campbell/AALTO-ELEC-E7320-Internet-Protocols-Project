@@ -1,6 +1,7 @@
 <script>
     import { state } from "../stores/state_store.js";
     import Message from "../components/Message.svelte";
+    import InviteUsers from "../components/InviteUsers.svelte";
     export let user = {};
     export let selectedRoomID = null;
     let messages = [];
@@ -76,6 +77,9 @@
 </script>
 
 <h1>Chat Name</h1>
+<div>
+    <InviteUsers {selectedRoomID} />
+</div>
 <div>
     {#each messages as message}
         <Message

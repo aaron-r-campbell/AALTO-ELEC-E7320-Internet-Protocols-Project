@@ -116,3 +116,53 @@ async def set_user_activity(db: Database, username: str, active: bool):
     }
 
     await db.execute(query=query, values=values)
+
+
+async def create_chat_room(db: Database, chatroom_name: str, creator_username: str):
+    async with db.transaction():
+        # First query: Insert a new room
+        query = "INSERT INTO rooms (name) VALUES (:chatroom_name)"
+        values = {"name": chatroom_name}
+        await db.execute(query=query, values=values)
+
+        query = "SELECT lastval() AS last_insert_id"
+        last_insert_id = await db.fetch_val(query=query)
+
+        print("THIS IS THE INSERTED VALUE", last_insert_id, "AND THIS IS THE ID:", last_insert_id["id"])
+
+        await add_user_to_chat_room(db, creator_username, last_insert_id["id"])
+
+
+async def add_user_to_chat_room(db: Database, username: str, room_id: int):
+    query = "INSERT INTO user_room_mappings (user_name, room_id) VALUES (:username, :room_id)"
+    values = {
+        "username": username,
+        "room_id": room_id
+        }
+    await db.execute(query=query, values=values)
+
+
+async def get_usernames_not_in_room(db: Database, room_id: int):
+    query = """
+        SELECT username
+        FROM users
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM user_room_mappings
+            WHERE user_room_mappings.user_name = users.username
+            AND user_room_mappings.room_id = :room_id
+        );
+        """
+
+    values = {
+        "room_id": room_id
+    }
+    result = await db.fetch_all(query=query, values=values)
+
+    users = [
+        {
+            "username": record["username"]
+         }
+        for record in result]
+
+    return users
