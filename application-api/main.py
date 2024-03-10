@@ -88,6 +88,7 @@ async def create_room(room: Room, username: str = Depends(check_jwt_token)):
 
 
 sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
+sio.background_task_started = False
 
 # wrap with ASGI application
 socket_app = socketio.ASGIApp(sio)
@@ -131,6 +132,12 @@ async def authenticate(sid, token):
             for mapping in user_rooms:
                 await sio.enter_room(sid, mapping["room_id"])
             print("Done in authenticate")
+
+            print("Background task has been started:", sio.background_task_started)
+            # Start a scheduled task
+            if not sio.background_task_started:
+                sio.start_background_task(scheduled_ping)
+                sio.background_task_started = True
 
     except JWTError as e:
         payload = {"successful": False, "description": "Authentication failed"}
@@ -249,7 +256,7 @@ async def send_message(sid, message, room_id):
 
         # Emit the message to the room
         await sio.emit("receive_msg", data=payload, room=room_id)
-        print("Sent payload")
+        # print("Sent payload")
 
     except ValueError as ve:
         print(f"ValueError: {ve}")
@@ -285,6 +292,9 @@ async def test_download(sid, _):
     await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
 
 
+# For the throughput tests, using socketio.SimpleClient.call can be used to wait for the messages to be sent
+# The basic emit doesn't wait for the message to be received.
+
 # client_total_bytes = {}
 
 # @sio.on("test_upload")
@@ -304,6 +314,30 @@ async def disconnect(sid):
 # async def add_users_to_rooms():
 #     mapping = await get_all_user_room_mappings(db)
 #     print("ROOMS:", mapping)
+
+@sio.on("ping_ack")
+async def ping_ack(sid, time_string):
+    # print("Received ping_ack with time:", time_string)
+    current_time = datetime.now()
+    ack_time = datetime.fromisoformat(time_string)
+
+    # Returns the time difference in milliseconds
+    time_difference = int((current_time - ack_time).total_seconds() * 1000)
+
+    # print("Emitting time difference")
+
+    await sio.emit("ping_result", time_difference, to=sid)
+
+
+async def scheduled_ping():
+    # print("IN SCHEDULED TASK!!")
+    while True:
+        # print("Waiting for 10 sec and sending ping")
+        await sio.sleep(10)
+        payload = str(datetime.now())
+        print("Emitting payload:", payload)
+        await sio.emit("ping", payload)
+
 
 if __name__ == "__main__":
     import uvicorn
