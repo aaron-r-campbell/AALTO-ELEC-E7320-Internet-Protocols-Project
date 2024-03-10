@@ -5,20 +5,15 @@
     let rooms = [];
     export let handleRoomSelection;
 
-    // const getUserRooms = () => {
-    //     return new Promise((resolve, reject) => {
-
-    //     });
-    // };
-
     onMount(async () => {
         try {
             console.log("getting user rooms");
             // rooms = await getUserRooms();
             $state.socket.emit("get_user_rooms");
 
-            // We keep the listener as when a user is invited to a room, the same message is sent
+            // We keep the listener as when a user is invited to a room, the same message is sent or when a user is invited to a room
             $state.socket.on("return_user_rooms", (new_rooms) => {
+                console.log("GOT RETURN USER ROOMS:", new_rooms);
                 rooms = new_rooms;
             });
             console.log("Fetched rooms:", rooms);

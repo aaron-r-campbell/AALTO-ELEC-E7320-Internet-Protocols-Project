@@ -2,17 +2,17 @@ from databases import Database
 from typing import List, Dict, Any
 
 
-async def insert_room(db: Database, room_name: str) -> int:
-    query = "INSERT INTO rooms (name) VALUES (:name) RETURNING id"
-    values = {"name": room_name}
-    room_id = await db.execute(query=query, values=values)
-    return room_id
+# async def insert_room(db: Database, room_name: str) -> int:
+#     query = "INSERT INTO rooms (name) VALUES (:name) RETURNING id"
+#     values = {"name": room_name}
+#     room_id = await db.execute(query=query, values=values)
+#     return room_id
 
 
-async def insert_user_room_mapping(db: Database, user_name: str, room_id: int) -> None:
-    query = "INSERT INTO user_room_mappings(user_name, room_id) VALUES (:user_name, :room_id)"
-    values = {"user_name": user_name, "room_id": room_id}
-    await db.execute(query=query, values=values)
+# async def insert_user_room_mapping(db: Database, user_name: str, room_id: int) -> None:
+#     query = "INSERT INTO user_room_mappings(user_name, room_id) VALUES (:user_name, :room_id)"
+#     values = {"user_name": user_name, "room_id": room_id}
+#     await db.execute(query=query, values=values)
 
 
 async def check_user_exists(db: Database, username: str) -> bool:
@@ -119,18 +119,20 @@ async def set_user_activity(db: Database, username: str, active: bool):
 
 
 async def create_chat_room(db: Database, chatroom_name: str, creator_username: str):
+    # Both creates the room and inserts the user into the room
     async with db.transaction():
-        # First query: Insert a new room
-        query = "INSERT INTO rooms (name) VALUES (:chatroom_name)"
+        query = "INSERT INTO rooms (name) VALUES (:name)"
         values = {"name": chatroom_name}
         await db.execute(query=query, values=values)
 
         query = "SELECT lastval() AS last_insert_id"
         last_insert_id = await db.fetch_val(query=query)
 
-        print("THIS IS THE INSERTED VALUE", last_insert_id, "AND THIS IS THE ID:", last_insert_id["id"])
+        print("THIS IS THE INSERTED VALUE", last_insert_id)
 
-        await add_user_to_chat_room(db, creator_username, last_insert_id["id"])
+        await add_user_to_chat_room(db, creator_username, last_insert_id)
+
+        return last_insert_id
 
 
 async def add_user_to_chat_room(db: Database, username: str, room_id: int):
@@ -140,6 +142,13 @@ async def add_user_to_chat_room(db: Database, username: str, room_id: int):
         "room_id": room_id
         }
     await db.execute(query=query, values=values)
+
+
+async def check_if_roomname_exists(db: Database, room_name):
+    query = "SELECT EXISTS(SELECT 1 FROM rooms WHERE name = :roomname)"
+    values = {"roomname": room_name}
+    response = await db.execute(query=query, values=values)
+    return bool(response)
 
 
 async def get_usernames_not_in_room(db: Database, room_id: int):

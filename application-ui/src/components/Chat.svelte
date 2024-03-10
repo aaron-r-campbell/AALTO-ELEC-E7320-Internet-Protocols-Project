@@ -1,9 +1,13 @@
 <script>
     import { state } from "../stores/state_store.js";
+    import { onMount } from "svelte";
+
     import Message from "../components/Message.svelte";
     import InviteUsers from "../components/InviteUsers.svelte";
+
     export let user = {};
     export let selectedRoomID = null;
+
     let messages = [];
 
     const getRoomMessages = () => {
@@ -38,8 +42,10 @@
                 console.log("Null user. Waiting for update");
                 return;
             }
+            // Initially get all messages
             messages = await getRoomMessages();
 
+            // Then start listening to the instant messages
             $state.socket.off("receive_msg");
 
             $state.socket.on("receive_msg", (data) => {
@@ -60,6 +66,7 @@
 
                     messages = [...messages, new_message];
                     console.log("Current messages:", messages);
+                    // scrollToBottom(element);
                 } else {
                     console.error(
                         "Error in fetching room messages:",

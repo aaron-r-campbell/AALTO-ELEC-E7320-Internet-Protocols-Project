@@ -7,6 +7,7 @@
     import ChatInput from "../components/ChatInput.svelte";
     import PingResult from "../components/PingResult.svelte";
     import PeerInfo from "../components/PeerInfo.svelte";
+    import CreateRoom from "../components/CreateRoom.svelte";
 
     let user = {};
     let selectedRoomID = null;
@@ -21,6 +22,7 @@
 <div id="app">
     <div id="sidebar">
         <UserInfo bind:user />
+        <CreateRoom />
         <ChatSelector {handleRoomSelection} />
         <PingResult />
         <PeerInfo />

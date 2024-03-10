@@ -1,32 +1,34 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 
 # from fastapi.security import OAuth2PasswordBearer
-from fastapi.responses import JSONResponse
+# from fastapi.responses import JSONResponse
 from jose import JWTError
 from datetime import datetime
 # import json
 
 # import asyncpg
 import socketio
-from models import Room
+# from models import Room
 from typing import Dict
 
 from utils.db_util import lifespan, db
 from utils.auth_util import create_jwt_token, check_jwt_token
 from services.db_service import (
-    check_user_exists,
+    # check_user_exists,
     get_messages,
     save_message,
     user_exists_in_room,
     get_user,
-    insert_room,
-    insert_user_room_mapping,
+    # insert_room,
+    # insert_user_room_mapping,
     get_user_rooms,
     # get_all_user_room_mappings
     get_all_users,
     set_user_activity,
     add_user_to_chat_room,
-    get_usernames_not_in_room
+    get_usernames_not_in_room,
+    create_chat_room,
+    # check_if_roomname_exists
 )
 
 # FastAPI application
@@ -66,30 +68,6 @@ async def whoami(
     current_user: str = Depends(check_jwt_token),
 ):
     return {"username": current_user}
-
-
-@app.post("/create_chat_room")
-async def create_room(room: Room, username: str = Depends(check_jwt_token)):
-    transaction = await db.transaction()
-    try:
-        # create a room
-        room_id = await insert_room(db, room.name)
-        # Add the user to the room
-        await insert_user_room_mapping(db, username, room_id)
-        # Add the rest of the users to the room
-        for user in room.users:
-            exists = await check_user_exists(db, user)
-            if exists:
-                await insert_user_room_mapping(db, user, room_id)
-    except Exception as e:
-        print("an error occurred", e)
-        await transaction.rollback()
-        return HTTPException(status_code=400, detail="Failed to create chat room")
-    else:
-        await transaction.commit()
-        return JSONResponse(
-            {"message": "A room has been created.", "room_id": room_id}, status_code=200
-        )
 
 
 sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
@@ -181,8 +159,28 @@ async def authenticate(sid, token):
         await sio.emit("authenticate_ack", payload, to=sid)
         print(f"Unknown error in authenticate {e}")
 
-# @sio.on("create_room")
 # @sio.on("remove_room")
+
+
+@sio.on("create_room")
+async def create_room(sid, room_name):
+    assert isinstance(room_name, str), "Room_name is not a string"
+    assert len(room_name) > 3, "Room_name is not long enough"
+    # This does allow repeat room names!!!
+    async with sio.session(sid) as session:
+        username = session["username"]
+
+        # create a room
+        room_id = await create_chat_room(db, room_name, username)
+
+        # Add the creator to the sio room so they receive messages there
+        await sio.enter_room(sid, room_id)
+
+        # Retrieves all users for the currrent user
+        rooms = await get_user_rooms(db=db, username=username)
+
+        # Update the room list of the creator
+        await sio.emit("return_user_rooms", rooms, to=sid)
 
 
 @sio.on("get_users_not_in_room")
@@ -320,7 +318,7 @@ async def send_message(sid, message, room_id):
 
         # Save the message
         await save_message(db, username, room_id, message)
-        print("Message has been saved")
+        # print("Message has been saved")
 
         # Prepare data to emit
         data = {
