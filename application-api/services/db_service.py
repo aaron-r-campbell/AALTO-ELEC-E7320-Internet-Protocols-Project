@@ -1,18 +1,18 @@
 from databases import Database
-from typing import List
+from typing import List, Dict, Any
 
 
-async def insert_room(db: Database, room_name: str) -> int:
-    query = "INSERT INTO rooms (name) VALUES (:name) RETURNING id"
-    values = {"name": room_name}
-    room_id = await db.execute(query=query, values=values)
-    return room_id
+# async def insert_room(db: Database, room_name: str) -> int:
+#     query = "INSERT INTO rooms (name) VALUES (:name) RETURNING id"
+#     values = {"name": room_name}
+#     room_id = await db.execute(query=query, values=values)
+#     return room_id
 
 
-async def insert_user_room_mapping(db: Database, user_name: str, room_id: int) -> None:
-    query = "INSERT INTO user_room_mappings(user_name, room_id) VALUES (:user_name, :room_id)"
-    values = {"user_name": user_name, "room_id": room_id}
-    await db.execute(query=query, values=values)
+# async def insert_user_room_mapping(db: Database, user_name: str, room_id: int) -> None:
+#     query = "INSERT INTO user_room_mappings(user_name, room_id) VALUES (:user_name, :room_id)"
+#     values = {"user_name": user_name, "room_id": room_id}
+#     await db.execute(query=query, values=values)
 
 
 async def check_user_exists(db: Database, username: str) -> bool:
@@ -62,7 +62,7 @@ async def get_messages(db: Database, room_id: int, offset: int = 0):
 #     return result["friendly_name"] if result else None
 
 
-async def get_user_rooms(db: Database, username) -> List[int]:
+async def get_user_rooms(db: Database, username):
     query = "SELECT rooms.id AS room_id, rooms.name AS room_name FROM user_room_mappings, rooms WHERE rooms.id = user_room_mappings.room_id AND user_name = :username" # noqa
     values = {"username": username}
     result = await db.fetch_all(query=query, values=values)
@@ -75,3 +75,103 @@ async def get_user_rooms(db: Database, username) -> List[int]:
         for record in result]
 
     return room_ids
+
+
+async def get_all_user_room_mappings(db: Database) -> List[int]:
+    query = "SELECT user_name, room_id FROM user_room_mappings" # noqa
+
+    result = await db.fetch_all(query=query)
+
+    mappings = [
+        {
+            "room_id": record["room_id"],
+            "user_name": record["user_name"]
+         }
+        for record in result]
+
+    return mappings
+
+
+async def get_all_users(db: Database) -> List[Dict[str, Any]]:
+    query = "SELECT username, active, last_seen FROM users"
+
+    result = await db.fetch_all(query=query)
+
+    users = [
+        {
+            "username": record["username"],
+            "active": record["active"]
+         }
+        for record in result]
+
+    return users
+
+
+async def set_user_activity(db: Database, username: str, active: bool):
+    query = "UPDATE users SET active = :active WHERE username = :username"
+
+    values = {
+        "username": username,
+        "active": active
+    }
+
+    await db.execute(query=query, values=values)
+
+
+async def create_chat_room(db: Database, chatroom_name: str, creator_username: str):
+    # Both creates the room and inserts the user into the room
+    async with db.transaction():
+        query = "INSERT INTO rooms (name) VALUES (:name)"
+        values = {"name": chatroom_name}
+        await db.execute(query=query, values=values)
+
+        query = "SELECT lastval() AS last_insert_id"
+        last_insert_id = await db.fetch_val(query=query)
+
+        print("THIS IS THE INSERTED VALUE", last_insert_id)
+
+        await add_user_to_chat_room(db, creator_username, last_insert_id)
+
+        return last_insert_id
+
+
+async def add_user_to_chat_room(db: Database, username: str, room_id: int):
+    query = "INSERT INTO user_room_mappings (user_name, room_id) VALUES (:username, :room_id)"
+    values = {
+        "username": username,
+        "room_id": room_id
+        }
+    await db.execute(query=query, values=values)
+
+
+async def check_if_roomname_exists(db: Database, room_name):
+    query = "SELECT EXISTS(SELECT 1 FROM rooms WHERE name = :roomname)"
+    values = {"roomname": room_name}
+    response = await db.execute(query=query, values=values)
+    return bool(response)
+
+
+async def get_usernames_not_in_room(db: Database, room_id: int):
+    query = """
+        SELECT username
+        FROM users
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM user_room_mappings
+            WHERE user_room_mappings.user_name = users.username
+            AND user_room_mappings.room_id = :room_id
+        );
+        """
+
+    values = {
+        "room_id": room_id
+    }
+    result = await db.fetch_all(query=query, values=values)
+
+    users = [
+        {
+            "username": record["username"]
+         }
+        for record in result]
+
+    return users

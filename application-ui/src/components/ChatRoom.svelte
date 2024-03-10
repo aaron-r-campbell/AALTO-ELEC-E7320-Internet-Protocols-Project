@@ -1,5 +1,6 @@
 <script>
     import Chat from "./Chat.svelte";
+    import ChatInput from "./ChatInput.svelte";
     
     export let user;
     export let selectedRoomID;
@@ -9,6 +10,7 @@
     {#if selectedRoomID !== null}
         <Chat {user} {selectedRoomID} />
     {/if}
+    <ChatInput {user} {selectedRoomID} />
 </div>
 
 

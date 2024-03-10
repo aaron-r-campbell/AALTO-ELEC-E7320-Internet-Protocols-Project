@@ -1,29 +1,13 @@
 <script>
-    import Chat from "../Chat.svelte";
-    import axios from "axios";
     import FileUpload from "./FileUpload.svelte";
 
     export let user;
     export let selectedRoomID;
     let content = '';
 
-    async function handleFileChange(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        render.onload = () => {
-            content = reader.result;
-            console.log(reader.result);
-        }
-        render.onerror = () => {
-            console.log(reader.error);
-        }
-        reader.readAsText(file)
-    }
 </script>
 
-<div id="files">
+<div id="file">
     {#if selectedRoomID !== null}
         {content}
     {/if}
@@ -32,7 +16,7 @@
 </div>
 
 <style>
-    #files {
+    #file {
         height: 100%;
         flex: 1;
         overflow-y: auto;

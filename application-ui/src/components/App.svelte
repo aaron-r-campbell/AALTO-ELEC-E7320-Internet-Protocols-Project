@@ -1,14 +1,12 @@
 <script>
-    import { onMount } from "svelte";
-    import { state } from "../stores/state_store.js";
     import ChatSelector from "../components/ChatSelector.svelte";
     import UserInfo from "../components/UserInfo.svelte";
-    import Chat from "../components/Chat.svelte";
+    import PingResult from "../components/PingResult.svelte";
+    import PeerInfo from "../components/PeerInfo.svelte";
+    import CreateRoom from "../components/CreateRoom.svelte";
     import { navOptions } from "../components/Nav.svelte";
 
     let selected = navOptions[0]; // keep track of the selected 'page' object 
-    import Nav from "./Nav.svelte";
-    import ChatRoom from "./ChatRoom.svelte";
     let intSelected = 0; //selected page index
 
     let user = {};
@@ -25,13 +23,17 @@
         intSelected = event.srcElement.id;
     }
 
+    console.log("hello");
 </script>
 <!-- Include Bootstrap CSS-->
 <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'>
 <div id="app">
     <div id="sidebar">
         <UserInfo bind:user />
+        <CreateRoom />
         <ChatSelector {handleRoomSelection} />
+        <PingResult />
+        <PeerInfo />
     </div>
     <div id="page">
         <!--app navigation -->
@@ -58,6 +60,7 @@
         width: 100%;
     }
 
+
     #sidebar {
         width: 250px;
         background-color: #2c3e50; /* Dark background color */
@@ -75,5 +78,7 @@
 
     #page-content {
         margin-top: 10px;
+        flex: 1; /* Grow to fill remaining space */
+
     }
 </style>

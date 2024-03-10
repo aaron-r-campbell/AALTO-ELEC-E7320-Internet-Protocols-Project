@@ -1,26 +1,34 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 
 # from fastapi.security import OAuth2PasswordBearer
-from fastapi.responses import JSONResponse
+# from fastapi.responses import JSONResponse
 from jose import JWTError
 from datetime import datetime
 # import json
 
 # import asyncpg
 import socketio
-from models import Room
+# from models import Room
+from typing import Dict
 
 from utils.db_util import lifespan, db
 from utils.auth_util import create_jwt_token, check_jwt_token
 from services.db_service import (
-    check_user_exists,
+    # check_user_exists,
     get_messages,
     save_message,
     user_exists_in_room,
     get_user,
-    insert_room,
-    insert_user_room_mapping,
-    get_user_rooms
+    # insert_room,
+    # insert_user_room_mapping,
+    get_user_rooms,
+    # get_all_user_room_mappings
+    get_all_users,
+    set_user_activity,
+    add_user_to_chat_room,
+    get_usernames_not_in_room,
+    create_chat_room,
+    # check_if_roomname_exists
 )
 
 # FastAPI application
@@ -30,7 +38,7 @@ app = FastAPI(lifespan=lifespan)
 @app.post("/token")
 @app.post("/login")
 async def login(request: Request):
-    print("GOT LOGIN REQUEST:", request)
+    # print("GOT LOGIN REQUEST:", request)
     try:
         data = await request.json()
     except Exception:
@@ -62,41 +70,22 @@ async def whoami(
     return {"username": current_user}
 
 
-@app.post("/create_chat_room")
-async def create_room(room: Room, username: str = Depends(check_jwt_token)):
-    transaction = await db.transaction()
-    try:
-        # create a room
-        room_id = await insert_room(db, room.name)
-        # Add the user to the room
-        await insert_user_room_mapping(db, username, room_id)
-        # Add the rest of the users to the room
-        for user in room.users:
-            exists = await check_user_exists(db, user)
-            if exists:
-                await insert_user_room_mapping(db, user, room_id)
-    except Exception as e:
-        print("an error occurred", e)
-        await transaction.rollback()
-        return HTTPException(status_code=400, detail="Failed to create chat room")
-    else:
-        await transaction.commit()
-        return JSONResponse(
-            {"message": "A room has been created.", "room_id": room_id}, status_code=200
-        )
-
-
 sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
+sio.background_task_started = False
 
 # wrap with ASGI application
 socket_app = socketio.ASGIApp(sio)
 app.mount("/", socket_app)
 
+# Mapping from usernames to sids.
+# Is needed for inviting other users to a chatroom
+user_sockets_mapping: Dict[str, str] = {}
+
 
 @sio.on("connect")
 async def connect(sid, env):
     # print("THIS IS THE ENV:", env)
-    print("new client connected with session id: " + str(sid))
+    # print("new client connected with session id: " + str(sid))
 
     """Apparently socketio does automatically send a "connect" event on succesful connect so this isn't needed"""
     # payload = {"successful": True, "description": "Connection successful"}
@@ -118,11 +107,47 @@ async def authenticate(sid, token):
         In the future, the username should be accessed through this.
         """
         async with sio.session(sid) as session:
-            print("In sio session section")
+            # print("In sio session section")
             session["username"] = username
+
+            user_sockets_mapping[username] = sid
+
+            print(user_sockets_mapping)
+
             payload = {"successful": True, "description": "Authentication successful"}
             await sio.emit("authenticate_ack", payload, to=sid)
             print(f"Connection has been made with the user: {username}")
+
+            # Register sid to rooms that the user already is a prt of
+            user_rooms = await get_user_rooms(db, username)
+            # print("Registering user to rooms:", user_rooms)
+            for mapping in user_rooms:
+                await sio.enter_room(sid, mapping["room_id"])
+
+            # print("Background task has been started:", sio.background_task_started)
+            # Start a scheduled task
+            if not sio.background_task_started:
+                sio.start_background_task(scheduled_ping)
+                sio.background_task_started = True
+
+            # Update the user's active status in the database, fetch the list of users,
+            # and send the update for other users
+            await set_user_activity(db, username, True)
+
+            users = await get_all_users(db)
+            # print("THESE ARE THE USERS", users)
+            # print("Sending user list")
+
+            await sio.emit("user_activities", users, to=sid)
+
+            # print("Sending user update payload")
+
+            user_update_payload = {
+                "username": username,
+                "active": True
+            }
+
+            await sio.emit("user_activities_update", user_update_payload, skip_sid=sid)
 
     except JWTError as e:
         payload = {"successful": False, "description": "Authentication failed"}
@@ -134,34 +159,107 @@ async def authenticate(sid, token):
         await sio.emit("authenticate_ack", payload, to=sid)
         print(f"Unknown error in authenticate {e}")
 
+# @sio.on("remove_room")
 
-@sio.on("join_room")
-async def join_room(sid, room_id):
+
+@sio.on("create_room")
+async def create_room(sid, room_name):
+    assert isinstance(room_name, str), "Room_name is not a string"
+    assert len(room_name) > 3, "Room_name is not long enough"
+    # This does allow repeat room names!!!
+    async with sio.session(sid) as session:
+        username = session["username"]
+
+        # create a room
+        room_id = await create_chat_room(db, room_name, username)
+
+        # Add the creator to the sio room so they receive messages there
+        await sio.enter_room(sid, room_id)
+
+        # Retrieves all users for the currrent user
+        rooms = await get_user_rooms(db=db, username=username)
+
+        # Update the room list of the creator
+        await sio.emit("return_user_rooms", rooms, to=sid)
+
+
+@sio.on("get_users_not_in_room")
+async def get_users_not_in_room(sid, room_id):
+    print(f"{sid} is retrieving users for {room_id}")
+    room_id = int(room_id)
+    async with sio.session(sid) as session:
+        username = session["username"]
+
+        # Inviter has to be in the room
+        if not await user_exists_in_room(db, username, room_id):
+            payload = {"successful": False, "description": "Authentication failed"}
+            await sio.emit("add_to_room_response", payload, to=sid)
+            raise Exception("No permission to join the room")
+    usernames = await get_usernames_not_in_room(db, room_id)
+
+    payload = {
+        "successful": True,
+        "data": usernames,
+        "description": ""
+        }
+
+    print("Retrieved users:", payload)
+
+    await sio.emit("get_users_not_in_room_response", payload, to=sid)
+
+
+@sio.on("add_to_room")
+async def add_to_room(sid, room_id, new_user):
     try:
-        print("join_room sid", sid)
-        print("join_room room_id", room_id)
+        print("add_to_room", sid, room_id, new_user)
         room_id = int(room_id)
         async with sio.session(sid) as session:
             username = session["username"]
-            if not await user_exists_in_room(db, username, room_id):
-                raise Exception("No permission to join the room")
 
-        await sio.enter_room(sid, room_id)
+            # Inviter has to be in the room
+            if not await user_exists_in_room(db, username, room_id):
+                payload = {"successful": False, "description": "Inviter not in room"}
+                await sio.emit("add_to_room_response", payload, to=sid)
+                raise Exception("Inviter is not in room")
+
+        # The user being invited can not be in the room they are being invited to
+        if await user_exists_in_room(db, new_user, room_id):
+            payload = {"successful": False, "description": "User is already in the room"}
+            await sio.emit("add_to_room_response", payload, to=sid)
+            raise Exception("Invited user already exists in room")
+
+        # Add user to the database
+        await add_user_to_chat_room(db, new_user, room_id)
+
+        # If the user is currently online, notify them immediately
+        if new_user in user_sockets_mapping:
+            new_user_sid = user_sockets_mapping[new_user]
+
+            # Make the user receive notifications for the room
+            await sio.enter_room(new_user_sid, room_id)
+
+            # Fetch the new list of rooms that the invited user is in
+            rooms = await get_user_rooms(db=db, username=new_user)
+
+            # Notify the invited user
+            await sio.emit("return_user_rooms", rooms, to=new_user_sid)
+
+        # Notify the inviter that the invitation was succesful
         payload = {"successful": True, "description": "Room joined succesfully"}
-        await sio.emit("join_room_ack", payload, to=sid)
+        await sio.emit("add_to_room_response", payload, to=sid)
 
     except ValueError:
         payload = {"successful": False, "description": "Invalid room ID"}
-        await sio.emit("join_room_ack", payload, to=sid)
+        await sio.emit("add_to_room_response", payload, to=sid)
 
     except KeyError:
         payload = {"successful": False, "description": "No username found in session"}
-        await sio.emit("join_room_ack", payload, to=sid)
+        await sio.emit("add_to_room_response", payload, to=sid)
 
     except Exception as e:
         print(f"Exception occurred while joining a room: {e}")
         payload = {"successful": False, "description": "Error occurred while joining a room"}
-        await sio.emit("join_room_ack", payload, to=sid)
+        await sio.emit("add_to_room_response", payload, to=sid)
 
 
 @sio.on("get_user_rooms")
@@ -210,22 +308,38 @@ async def send_message(sid, message, room_id):
         username = session["username"]
 
         if not await user_exists_in_room(db, username, room_id):
+            payload = {
+                "successful": False,
+                "description": "User is not in the room",
+                "data": None
+            }
+            await sio.emit("receive_msg", data=payload, to=sid)
             raise Exception("no permission to send messages to the room")
 
         # Save the message
         await save_message(db, username, room_id, message)
-        print("Message has been saved")
+        # print("Message has been saved")
 
         # Prepare data to emit
         data = {
             "username": username,
             "message": message,
             "timestamp": str(datetime.now()),
-            "message_id": 10  # This needs to be fetched from the database with the save_message function
+            "message_id": 10,  # This needs to be fetched from the database with the save_message function
         }
 
+        payload = {
+            "successful": True,
+            "description": "",
+            "data": data,
+            "room_id": room_id
+        }
+
+        print("Sending payload", payload)
+
         # Emit the message to the room
-        await sio.emit("receive_msg", data=data, room=room_id, skip_sid=sid)
+        await sio.emit("receive_msg", data=payload, room=room_id)
+        # print("Sent payload")
 
     except ValueError as ve:
         print(f"ValueError: {ve}")
@@ -261,6 +375,9 @@ async def test_download(sid, _):
     await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
 
 
+# For the throughput tests, using socketio.SimpleClient.call can be used to wait for the messages to be sent
+# The basic emit doesn't wait for the message to be received.
+
 # client_total_bytes = {}
 
 # @sio.on("test_upload")
@@ -275,6 +392,47 @@ async def test_download(sid, _):
 @sio.on("disconnect")
 async def disconnect(sid):
     print("client disconnected: " + str(sid))
+    async with sio.session(sid) as session:
+        username = session["username"]
+        user_sockets_mapping.pop(username)
+
+        print(f"Removing user {username} from active users")
+        await set_user_activity(db, username, False)
+
+        user_update_payload = {
+                "username": username,
+                "active": False
+            }
+
+        await sio.emit("user_activities_update", user_update_payload, skip_sid=sid)
+
+
+# async def add_users_to_rooms():
+#     mapping = await get_all_user_room_mappings(db)
+#     print("ROOMS:", mapping)
+
+@sio.on("ping_ack")
+async def ping_ack(sid, time_string):
+    # print("Received ping_ack with time:", time_string)
+    current_time = datetime.now()
+    ack_time = datetime.fromisoformat(time_string)
+
+    # Returns the time difference in milliseconds
+    time_difference = int((current_time - ack_time).total_seconds() * 1000)
+
+    # print("Emitting time difference")
+
+    await sio.emit("ping_result", time_difference, to=sid)
+
+
+async def scheduled_ping():
+    # print("IN SCHEDULED TASK!!")
+    while True:
+        # print("Waiting for 10 sec and sending ping")
+        await sio.sleep(10)
+        payload = str(datetime.now())
+        print("Emitting payload:", payload)
+        await sio.emit("ping", payload)
 
 
 if __name__ == "__main__":
