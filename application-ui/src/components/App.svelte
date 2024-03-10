@@ -1,13 +1,13 @@
 <script>
-    import { onMount } from "svelte";
-    import { state } from "../stores/state_store.js";
     import ChatSelector from "../components/ChatSelector.svelte";
     import UserInfo from "../components/UserInfo.svelte";
-    import Chat from "../components/Chat.svelte";
-    import ChatInput from "../components/ChatInput.svelte";
     import PingResult from "../components/PingResult.svelte";
     import PeerInfo from "../components/PeerInfo.svelte";
     import CreateRoom from "../components/CreateRoom.svelte";
+    import { navOptions } from "../components/Nav.svelte";
+
+    let selected = navOptions[0]; // keep track of the selected 'page' object 
+    let intSelected = 0; //selected page index
 
     let user = {};
     let selectedRoomID = null;
@@ -16,9 +16,17 @@
         console.log("CHANGING TO ROOM", roomID);
         selectedRoomID = roomID;
     }
+    
+    // chcange the selected component (event.srcElement.id refers to the ID attribute of the HTL element that triggered the event)
+    function changeComponent(event) {
+        selected = navOptions[event.srcElement.id]
+        intSelected = event.srcElement.id;
+    }
+
     console.log("hello");
 </script>
-
+<!-- Include Bootstrap CSS-->
+<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'>
 <div id="app">
     <div id="sidebar">
         <UserInfo bind:user />
@@ -27,13 +35,18 @@
         <PingResult />
         <PeerInfo />
     </div>
-    <div id="chats">
-        <div id="chat-container">
-            {#if selectedRoomID !== null}
-                <Chat {user} {selectedRoomID} />
-            {/if}
+    <div id="page">
+        <!--app navigation -->
+        <ul class="nav nav-tabs">
+            {#each navOptions as option, i}
+            <li class="nav-item">
+                <button class={intSelected == i ? "nav-link active p-2 ml-1" : "p-2 ml-1 nav-link"} on:click={changeComponent} id={i} role="tab">{option.page}</button>
+            </li>
+            {/each}
+        </ul>
+        <div id="page-content">
+            <svelte:component this={selected.component} user={user} selectedRoomID={selectedRoomID} />
         </div>
-        <ChatInput {user} {selectedRoomID} />
     </div>
 </div>
 
@@ -44,17 +57,9 @@
         padding: 0;
         display: flex;
         height: 100vh;
-    }
-    #chats {
-        flex: 1;
-        overflow-y: auto;
-        padding: 20px;
-        background-color: #ecf0f1; /* Light background color */
+        width: 100%;
     }
 
-    #chat-container {
-        flex: 1; /* Grow to fill remaining space */
-    }
 
     #sidebar {
         width: 250px;
@@ -62,5 +67,18 @@
         padding: 20px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         color: white; /* Text color */
+    }
+
+    #page {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 20px; /* Adjust as needed */
+        width: 100%;
+    }
+
+    #page-content {
+        margin-top: 10px;
+        flex: 1; /* Grow to fill remaining space */
+
     }
 </style>
