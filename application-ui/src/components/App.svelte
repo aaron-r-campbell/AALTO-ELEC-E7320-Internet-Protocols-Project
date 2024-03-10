@@ -1,11 +1,8 @@
 <script>
-    import { onMount } from "svelte";
-    import { state } from "../stores/state_store.js";
     import ChatSelector from "../components/ChatSelector.svelte";
     import UserInfo from "../components/UserInfo.svelte";
     import Chat from "../components/Chat.svelte";
     import ChatInput from "../components/ChatInput.svelte";
-    import PingResult from "../components/PingResult.svelte";
     import PeerInfo from "../components/PeerInfo.svelte";
     import CreateRoom from "../components/CreateRoom.svelte";
 
@@ -24,7 +21,6 @@
         <UserInfo bind:user />
         <CreateRoom />
         <ChatSelector {handleRoomSelection} />
-        <PingResult />
         <PeerInfo />
     </div>
     <div id="chats">

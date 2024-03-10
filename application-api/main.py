@@ -149,6 +149,10 @@ async def authenticate(sid, token):
 
             await sio.emit("user_activities_update", user_update_payload, skip_sid=sid)
 
+            # Send initiol ping just to display ping instantly
+            payload = str(datetime.now())
+            await sio.emit("ping", payload)
+
     except JWTError as e:
         payload = {"successful": False, "description": "Authentication failed"}
         await sio.emit("authenticate_ack", payload, to=sid)
@@ -414,15 +418,17 @@ async def disconnect(sid):
 @sio.on("ping_ack")
 async def ping_ack(sid, time_string):
     # print("Received ping_ack with time:", time_string)
-    current_time = datetime.now()
-    ack_time = datetime.fromisoformat(time_string)
+    async with sio.session(sid) as session:
+        username = session["username"]
+        current_time = datetime.now()
+        ack_time = datetime.fromisoformat(time_string)
 
-    # Returns the time difference in milliseconds
-    time_difference = int((current_time - ack_time).total_seconds() * 1000)
+        # Returns the time difference in milliseconds
+        time_difference = int((current_time - ack_time).total_seconds() * 1000)
 
-    # print("Emitting time difference")
+        # print("Emitting time difference")
 
-    await sio.emit("ping_result", time_difference, to=sid)
+        await sio.emit("ping_result", data=(time_difference, username))
 
 
 async def scheduled_ping():
