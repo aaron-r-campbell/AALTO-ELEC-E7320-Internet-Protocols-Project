@@ -1,5 +1,5 @@
 from databases import Database
-from typing import List
+from typing import List, Dict, Any
 
 
 async def insert_room(db: Database, room_name: str) -> int:
@@ -90,3 +90,29 @@ async def get_all_user_room_mappings(db: Database) -> List[int]:
         for record in result]
 
     return mappings
+
+
+async def get_all_users(db: Database) -> List[Dict[str, Any]]:
+    query = "SELECT username, active, last_seen FROM users"
+
+    result = await db.fetch_all(query=query)
+
+    users = [
+        {
+            "username": record["username"],
+            "active": record["active"]
+         }
+        for record in result]
+
+    return users
+
+
+async def set_user_activity(db: Database, username: str, active: bool):
+    query = "UPDATE users SET active = :active WHERE username = :username"
+
+    values = {
+        "username": username,
+        "active": active
+    }
+
+    await db.execute(query=query, values=values)

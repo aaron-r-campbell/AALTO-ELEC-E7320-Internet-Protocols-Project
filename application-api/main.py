@@ -22,6 +22,8 @@ from services.db_service import (
     insert_user_room_mapping,
     get_user_rooms,
     # get_all_user_room_mappings
+    get_all_users,
+    set_user_activity
 )
 
 # FastAPI application
@@ -31,7 +33,7 @@ app = FastAPI(lifespan=lifespan)
 @app.post("/token")
 @app.post("/login")
 async def login(request: Request):
-    print("GOT LOGIN REQUEST:", request)
+    # print("GOT LOGIN REQUEST:", request)
     try:
         data = await request.json()
     except Exception:
@@ -98,7 +100,7 @@ app.mount("/", socket_app)
 @sio.on("connect")
 async def connect(sid, env):
     # print("THIS IS THE ENV:", env)
-    print("new client connected with session id: " + str(sid))
+    # print("new client connected with session id: " + str(sid))
 
     """Apparently socketio does automatically send a "connect" event on succesful connect so this isn't needed"""
     # payload = {"successful": True, "description": "Connection successful"}
@@ -120,7 +122,7 @@ async def authenticate(sid, token):
         In the future, the username should be accessed through this.
         """
         async with sio.session(sid) as session:
-            print("In sio session section")
+            # print("In sio session section")
             session["username"] = username
             payload = {"successful": True, "description": "Authentication successful"}
             await sio.emit("authenticate_ack", payload, to=sid)
@@ -128,16 +130,35 @@ async def authenticate(sid, token):
 
             # Register sid to rooms that the user already is a prt of
             user_rooms = await get_user_rooms(db, username)
-            print("Registering user to rooms:", user_rooms)
+            # print("Registering user to rooms:", user_rooms)
             for mapping in user_rooms:
                 await sio.enter_room(sid, mapping["room_id"])
-            print("Done in authenticate")
 
-            print("Background task has been started:", sio.background_task_started)
+            # print("Background task has been started:", sio.background_task_started)
             # Start a scheduled task
             if not sio.background_task_started:
                 sio.start_background_task(scheduled_ping)
                 sio.background_task_started = True
+
+            # Update the user's active status in the database, fetch the list of users,
+            # and send the update for other users
+            await set_user_activity(db, username, True)
+
+            users = await get_all_users(db)
+            # print("THESE ARE THE USERS", users)
+
+            # print("Sending user list")
+
+            await sio.emit("user_list", users, to=sid)
+
+            # print("Sending user update payload")
+
+            user_update_payload = {
+                "username": username,
+                "active": True
+            }
+
+            await sio.emit("user_list_update", user_update_payload, skip_sid=sid)
 
     except JWTError as e:
         payload = {"successful": False, "description": "Authentication failed"}
@@ -309,6 +330,18 @@ async def test_download(sid, _):
 @sio.on("disconnect")
 async def disconnect(sid):
     print("client disconnected: " + str(sid))
+    async with sio.session(sid) as session:
+        username = session["username"]
+
+        print(f"Removing user {username} from active users")
+        await set_user_activity(db, username, False)
+
+        user_update_payload = {
+                "username": username,
+                "active": False
+            }
+
+        await sio.emit("user_list_update", user_update_payload, skip_sid=sid)
 
 
 # async def add_users_to_rooms():
