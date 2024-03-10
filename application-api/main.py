@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
 
 # from fastapi.security import OAuth2PasswordBearer
 # from fastapi.responses import JSONResponse
@@ -61,6 +61,38 @@ async def login(request: Request):
             "token": create_jwt_token(data={"sub": username}),
         }
     raise HTTPException(status_code=401, detail="Invalid credentials")
+
+
+# Idea, request larger downloads until the transfer lasts long enough
+
+@app.get("/throughput_download")
+async def download(request: Request):
+    # Extract the requested size from the payload
+    try:
+        size_kb = int(request.query_params.get("size_kb", 1))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Unknown error")
+
+    print("DOWNLOAD SIZE:", size_kb)
+
+    if size_kb > 100_000_00:
+        raise HTTPException(status_code=400, detail="Requested size exceeds the limit (10 GB)")
+
+    # Generate data of the requested size
+    data = b"A" * (size_kb * 1024)  # 1 KB = 1024 bytes
+
+    return Response(content=data, media_type="application/octet-stream")
+
+
+# @app.post("/throughput_download")
+# async def download(request: Request, payload: Dict[str, int]):
+#     # Extract the requested size from the payload
+#     size_kb = payload.get("size_kb", 1)
+
+#     # Generate data of the requested size
+#     data = b"A" * (size_kb * 1024)  # 1 KB = 1024 bytes
+
+#     return Response(content=data, media_type="application/octet-stream")
 
 
 @app.get("/whoami")
