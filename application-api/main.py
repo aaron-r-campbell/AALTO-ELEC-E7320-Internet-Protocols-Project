@@ -65,6 +65,7 @@ async def login(request: Request):
 
 # Idea, request larger downloads until the transfer lasts long enough
 
+# Add authentication
 @app.get("/throughput_download")
 async def download(request: Request):
     # Extract the requested size from the payload
@@ -84,15 +85,15 @@ async def download(request: Request):
     return Response(content=data, media_type="application/octet-stream")
 
 
-# @app.post("/throughput_download")
-# async def download(request: Request, payload: Dict[str, int]):
-#     # Extract the requested size from the payload
-#     size_kb = payload.get("size_kb", 1)
+# Add authentication
+@app.post("/throughput_upload")
+async def upload(request: Request):
+    # Extract the requested size from the payload
+    bytes_received = await request.body()
 
-#     # Generate data of the requested size
-#     data = b"A" * (size_kb * 1024)  # 1 KB = 1024 bytes
+    payload_json = {"payload": len(bytes_received)}
 
-#     return Response(content=data, media_type="application/octet-stream")
+    return payload_json
 
 
 @app.get("/whoami")

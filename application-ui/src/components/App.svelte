@@ -4,7 +4,8 @@
     import PeerInfo from "../components/PeerInfo.svelte";
     import CreateRoom from "../components/CreateRoom.svelte";
     import { navOptions } from "../components/Nav.svelte";
-    import DownThroughputTest from "./DownThroughputTest.svelte";
+    import DownThroughputTest from "../components/DownThroughputTest.svelte";
+    import UploadThroughputTest from "../components/UploadThroughputTest.svelte";
 
     let selected = navOptions[0]; // keep track of the selected 'page' object
     let intSelected = 0; //selected page index
@@ -38,6 +39,7 @@
         <ChatSelector {handleRoomSelection} />
         <PeerInfo />
         <DownThroughputTest />
+        <UploadThroughputTest />
     </div>
     <div id="page">
         <!--app navigation -->

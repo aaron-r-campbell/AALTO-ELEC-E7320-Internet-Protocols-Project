@@ -6,18 +6,18 @@
   let isDisabled = false;
 
   // Function to initiate the download request
-  const throughputTest = async (sizeKB) => {
+  const downloadTest = async () => {
     try {
       let delay_milliseconds = 0;
 
       // Iteratively increase delay until test lasts longer than 10 seconds
-      while (delay_milliseconds < 10000) {
+      while (delay_milliseconds < 5000) {
         console.log("Previous delay:", delay_milliseconds);
         const url = `http://localhost:7800/api/throughput_download?size_kb=${sizeKB}`;
 
         const start = Date.now();
 
-        const response = await axios.get(url, {
+        await axios.get(url, {
           responseType: "blob",
           timeout: 30000,
         });
@@ -26,17 +26,20 @@
 
         delay_milliseconds = end - start;
 
+        // Maybe looks nicer when the value updates during the test
+        if (delay_milliseconds > 0) {
+          throughputMbps = Math.trunc(
+            (8 * sizeKB) / (delay_milliseconds / 1000) / 1024,
+          );
+        }
+
         sizeKB = sizeKB * 2;
       }
 
-      const result = Math.trunc(
-        (8 * sizeKB) / (delay_milliseconds / 1000) / 1024,
-      );
-
+      // Reset the sizeKB for future tests
       sizeKB = 1024;
 
       // Save the response data into a variable
-      return result;
     } catch (error) {
       console.error("Error downloading file:", error);
       return null; // Return null in case of error
@@ -45,7 +48,7 @@
 
   const handleSubmit = async () => {
     isDisabled = true;
-    throughputMbps = await throughputTest(sizeKB);
+    await downloadTest();
     isDisabled = false;
   };
 </script>
@@ -61,6 +64,6 @@
   {#if throughputMbps !== null}
     <p>Download throughput estimate: {throughputMbps} Kbps</p>
   {:else}
-    <p>No throughput estimate available</p>
+    <p>No download throughput estimate available</p>
   {/if}
 </div>
