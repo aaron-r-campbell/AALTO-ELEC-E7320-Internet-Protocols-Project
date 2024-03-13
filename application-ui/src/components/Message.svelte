@@ -44,7 +44,7 @@
 
     .other-message {
         align-self: flex-start;
-        background-color: #f1f1f1; /* Grey color for other messages */
+        background-color: #fff; /* Grey color for other messages */
         color: black;
     }
 
