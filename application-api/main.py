@@ -359,8 +359,8 @@ async def send_message(sid, message, room_id):
 
         # Prepare data to emit
         data = {
-            "username": username,
-            "message": message,
+            "sender": username,
+            "content": message,
             "timestamp": str(datetime.now()),
             "message_id": 10,  # This needs to be fetched from the database with the save_message function
         }
