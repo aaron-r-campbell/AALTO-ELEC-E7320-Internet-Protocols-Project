@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Request, Response
+from fastapi import FastAPI, Depends, HTTPException, Request, Response  # noqa
 
 # from fastapi.security import OAuth2PasswordBearer
 # from fastapi.responses import JSONResponse
@@ -122,56 +122,47 @@ async def authenticate(sid, token):
 
             user_sockets_mapping[username] = sid
 
-            print(user_sockets_mapping)
+            # TODO: IDK what error this throws but should be handled. Currently goes to 
+            async with db.transaction():
+                # Get rooms that user is in to register user to receive messages from them
+                user_rooms = await get_user_rooms(db, username)
 
-            # TODO: Need to reorder such that all database operations happen in a single transaction
-            # TODO: async with db.transaction(): ...
-            # TODO: And after this do all of the sio.emit's
+                # Update the user's active status in the database
+                await set_user_activity(db, username, True)
 
-            # TODO: Add successful, description, payload as arguments, not as payload
-            # sio.emit("authenticate_ack", data=(succesful, description, payload), to=sid)
-            payload = {"successful": True, "description": "Authentication successful"}
-            await sio.emit("authenticate_ack", payload, to=sid)
-            print(f"Connection has been made with the user: {username}")
+                # fetch the list of users to inform that activity has changed
+                users = await get_all_users(db)
 
-            # Register sid to rooms that the user already is a prt of
-            user_rooms = await get_user_rooms(db, username)
-            # print("Registering user to rooms:", user_rooms)
+            # Register sid to rooms that the user already is a part of
             for mapping in user_rooms:
                 await sio.enter_room(sid, mapping["room_id"])
 
-            # print("Background task has been started:", sio.background_task_started)
-            # Start a scheduled task
-            if not sio.background_task_started:
-                sio.start_background_task(scheduled_ping)
-                sio.background_task_started = True
+            # TODO: Add successful, description, payload as arguments, not as payload
+            payload = {"successful": True, "description": "Authentication successful"}
+            await sio.emit("authenticate_ack", payload, to=sid)
 
-            # Update the user's active status in the database, fetch the list of users,
-            # and send the update for other users
-            await set_user_activity(db, username, True)
-
-            users = await get_all_users(db)
-            # print("THESE ARE THE USERS", users)
-            # print("Sending user list")
-
+            # Send user activities of all users to the connecting user
             # TODO: Add successful, description, payload
             await sio.emit("user_activities", users, to=sid)
 
-            # print("Sending user update payload")
-
-            user_update_payload = {
-                "username": username,
-                "active": True
-            }
-
+            # Inform all users of the activity of the connecting user
             # TODO: Add successful, description, payload
+            user_update_payload = {"username": username, "active": True}
             await sio.emit("user_activities_update", user_update_payload, skip_sid=sid)
 
             # Send initiol ping just to display ping instantly
             payload = str(datetime.now())
             await sio.emit("ping", payload)
 
-    # TODO: Add HTTPException for token check
+            if not sio.background_task_started:
+                # Start scheduled pings
+                sio.start_background_task(scheduled_ping)
+                sio.background_task_started = True
+
+    except HTTPException as e:
+        payload = {"successful": False, "description": "Authentication failed"}
+        await sio.emit("authenticate_ack", payload, to=sid)
+        print(f"Authentication HTTPException: {e}")
 
     except JWTError as e:
         payload = {"successful": False, "description": "Authentication failed"}
