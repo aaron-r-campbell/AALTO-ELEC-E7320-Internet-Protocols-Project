@@ -122,7 +122,7 @@ async def authenticate(sid, token):
 
             user_sockets_mapping[username] = sid
 
-            # TODO: IDK what error this throws but should be handled. Currently goes to 
+            # TODO: IDK what error this throws but should be handled. Currently goes to
             async with db.transaction():
                 # Get rooms that user is in to register user to receive messages from them
                 user_rooms = await get_user_rooms(db, username)
