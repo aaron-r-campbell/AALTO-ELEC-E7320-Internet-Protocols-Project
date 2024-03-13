@@ -11,7 +11,11 @@
 
 		if (response.status === 200) {
 			// Update the token
-			state.set({ ...$state, token: response.data.token });
+			state.set({
+				...$state,
+				token: response.data.token,
+				username: username,
+			});
 
 			// Set axios bearer token header for use with withCredentials
 			axios.defaults.headers.common["Authorization"] =

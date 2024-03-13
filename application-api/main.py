@@ -88,13 +88,6 @@ async def upload(request: Request):
     return payload_json
 
 
-@app.get("/whoami")
-async def whoami(
-    current_user: str = Depends(check_jwt_token),
-):
-    return {"username": current_user}
-
-
 sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
 sio.background_task_started = False
 
