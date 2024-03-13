@@ -1,26 +1,12 @@
 <script>
-    import axios from "axios";
     import { onMount } from "svelte";
     import { state } from "../stores/state_store";
 
     export let user = {};
 
-    const get_username = () => {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const response = await axios.get("/api/whoami", {
-                    withCredentials: true,
-                });
-                resolve(response.data.username);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    };
-
     onMount(async () => {
         try {
-            user.username = await get_username();
+            user.username = $state.username;
         } catch (error) {
             console.error("Error fetching username:", error);
         }
