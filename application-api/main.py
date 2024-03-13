@@ -131,6 +131,10 @@ async def authenticate(sid, token):
 
             print(user_sockets_mapping)
 
+            # TODO: Need to reorder such that all database operations happen in a single transaction
+            # TODO: async with db.transaction(): ...
+            # TODO: And after this do all of the sio.emit's
+
             # TODO: Add successful, description, payload as arguments, not as payload
             # sio.emit("authenticate_ack", data=(succesful, description, payload), to=sid)
             payload = {"successful": True, "description": "Authentication successful"}
@@ -187,6 +191,7 @@ async def authenticate(sid, token):
         # TODO: await sio.emit("authenticate_ack", data=(succesful=false, description="autherror", payload=None), to=sid)  # noqa
         await sio.emit("authenticate_ack", payload, to=sid)
         print(f"Unknown error in authenticate {e}")
+
 
 # TODO: Missing functionality
 # @sio.on("remove_room")
@@ -406,46 +411,6 @@ async def send_message(sid, message, room_id):
         print(f"Exception occurred while sending message: {e}")
 
 
-@sio.on("test_download")
-async def test_download(sid, _):
-    binary_payload = 0
-    for i in range(1024):
-        if i % 2 == 1:
-            binary_payload |= 1 << i
-
-    start_time = datetime.now()
-    end_time = datetime.now()
-    packets_sent = 0
-    # For future, grow the payload size based on connection speed to reduce the effect of latency.
-    print("Starting download")
-    while (end_time - start_time).total_seconds() < 10:  # Do for 10 seconds
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
-        await sio.emit("receive_throughput", data=binary_payload, to=sid)
-        packets_sent += 1
-        end_time = datetime.now()
-
-    throughput_kbps = (packets_sent * 1024) / (end_time - start_time).total_seconds()
-
-    print("GOT THROUGHPUT:", throughput_kbps)
-
-    # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
-    await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
-
-
-# For the throughput tests, using socketio.SimpleClient.call can be used to wait for the messages to be sent
-# The basic emit doesn't wait for the message to be received.
-
-# client_total_bytes = {}
-
-# @sio.on("test_upload")
-# async def test_upload(sid):
-#     total = 0
-
-
-# @sio.on("test_latency")
-# async def test_latency(sid, timestamp):
-
-
 @sio.on("disconnect")
 async def disconnect(sid):
     print("client disconnected: " + str(sid))
@@ -465,10 +430,6 @@ async def disconnect(sid):
         # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
         await sio.emit("user_activities_update", user_update_payload, skip_sid=sid)
 
-
-# async def add_users_to_rooms():
-#     mapping = await get_all_user_room_mappings(db)
-#     print("ROOMS:", mapping)
 
 @sio.on("ping_ack")
 async def ping_ack(sid, time_string):
