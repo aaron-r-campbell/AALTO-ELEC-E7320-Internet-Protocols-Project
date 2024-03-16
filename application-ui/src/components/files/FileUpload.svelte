@@ -1,7 +1,7 @@
 <script>
     import { onMount } from "svelte";
 
-    export let content;
+    export let objects, callback;
     let hidden;
 
     onMount(() => {
@@ -15,7 +15,12 @@
 
         const reader = new FileReader();
         reader.onload = () => {
-            content = reader.result;
+            objects = reader.result.split("").map((char, index) => {
+                const position = index + 0.5; // Assume halfway between characters
+                const obj = { value: char, position: position };
+                return obj;
+            });
+            callback(); // update the visible text
             console.log(reader.result);
         }
         reader.onerror = () => {
