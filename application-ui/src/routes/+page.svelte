@@ -12,7 +12,7 @@
         if (!$state.token) {
             goto("/login");
         } else if (!$state.socket) {
-            const socket = io("/api");
+            const socket = io("http://localhost:7800");
 
             // Run on authenticate response
             socket.on("authenticate_ack", (data) => {
