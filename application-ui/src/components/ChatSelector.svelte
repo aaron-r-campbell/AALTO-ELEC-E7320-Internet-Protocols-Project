@@ -17,6 +17,18 @@
                 rooms = new_rooms;
             });
             console.log("Fetched rooms:", rooms);
+
+            $state.socket.on(
+                "remove_room_response",
+                (successful, description, room_id) => {
+                    if (successful) {
+                        console.log("Got 'Remove room' with room_id", room_id);
+                        rooms = rooms.filter((x) => x.room_id !== room_id);
+                    } else {
+                        console.error(description);
+                    }
+                },
+            );
         } catch (error) {
             console.error("Error fetching user chats:", error);
         }

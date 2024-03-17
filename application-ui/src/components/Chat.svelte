@@ -4,6 +4,7 @@
 
     import Message from "../components/Message.svelte";
     import InviteUsers from "../components/InviteUsers.svelte";
+    import RemoveRoom from "../components/RemoveRoom.svelte";
 
     export let user = {};
     export let selectedRoomID = null;
@@ -86,6 +87,9 @@
 <h1>Chat Name</h1>
 <div>
     <InviteUsers {selectedRoomID} />
+</div>
+<div>
+    <RemoveRoom {selectedRoomID} />
 </div>
 <div>
     {#each messages as message}

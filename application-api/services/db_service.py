@@ -62,13 +62,6 @@ async def get_messages(db: Database, room_id: int, offset: int = 0):
     return rows
 
 
-# async def get_friendly_name_for_user(db: Database, username):
-#     query = "SELECT friendly_name FROM users WHERE name = :username"
-#     values = {"username": username}
-#     result = await db.fetch_one(query=query, values=values)
-#     return result["friendly_name"] if result else None
-
-
 async def get_user_rooms(db: Database, username: str):
     # TODO: Check that username exists
     # TODO: async with db.transaction():
@@ -158,7 +151,14 @@ async def add_user_to_chat_room(db: Database, username: str, room_id: int):
     await db.execute(query=query, values=values)
 
 
-async def check_if_roomname_exists(db: Database, room_name: str):
+async def check_roomid_exists(db: Database, roomid: str):
+    query = "SELECT EXISTS(SELECT 1 FROM rooms WHERE id = :roomid)"
+    values = {"roomid": roomid}
+    response = await db.execute(query=query, values=values)
+    return bool(response)
+
+
+async def check_roomname_exists(db: Database, room_name: str):
     query = "SELECT EXISTS(SELECT 1 FROM rooms WHERE name = :roomname)"
     values = {"roomname": room_name}
     response = await db.execute(query=query, values=values)
@@ -191,3 +191,30 @@ async def get_usernames_not_in_room(db: Database, room_id: int):
         for record in result]
 
     return users
+
+
+async def get_roomname_by_id(db: Database, room_id: int):
+    # TODO: Check that room_id exists
+    query = "SELECT name FROM rooms WHERE id = :room_id"
+    values = {"room_id": room_id}
+    result = await db.fetch_one(query=query, values=values)
+    if result:
+        return result["name"]
+    else:
+        return None
+
+
+async def delete_room_by_id(db: Database, room_id: int):
+    # TODO: Check that room_id exists
+    async with db.transaction():
+        query_messages = "DELETE FROM messages WHERE room_id = :room_id"
+        values_messages = {"room_id": room_id}
+        await db.execute(query=query_messages, values=values_messages)
+
+        query_mappings = "DELETE FROM user_room_mappings WHERE room_id = :room_id"
+        values_mappings = {"room_id": room_id}
+        await db.execute(query=query_mappings, values=values_mappings)
+
+        query_rooms = "DELETE FROM rooms WHERE id = :room_id"
+        values_rooms = {"room_id": room_id}
+        await db.execute(query=query_rooms, values=values_rooms)

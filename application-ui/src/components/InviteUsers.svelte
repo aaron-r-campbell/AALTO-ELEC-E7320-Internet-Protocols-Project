@@ -1,4 +1,3 @@
-<!-- InputField.svelte -->
 <script>
   import { onMount, onDestroy } from "svelte";
   import { state } from "../stores/state_store.js";

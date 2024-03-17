@@ -24,6 +24,9 @@ from services.db_service import (
     add_user_to_chat_room,
     get_usernames_not_in_room,
     create_chat_room,
+    check_roomid_exists,
+    # get_roomname_by_id,
+    delete_room_by_id
 )
 
 # FastAPI application
@@ -59,7 +62,7 @@ async def login(request: Request):
 
 # TODO: Add authentication
 @app.get("/throughput_download")
-async def download(request: Request):
+async def download(request: Request, username: str = Depends(check_jwt_token)):
     # Extract the requested size from the payload
     try:
         size_kb = int(request.query_params.get("size_kb", 1))
@@ -79,7 +82,7 @@ async def download(request: Request):
 
 # TODO: Add authentication
 @app.post("/throughput_upload")
-async def upload(request: Request):
+async def upload(request: Request, username: str = Depends(check_jwt_token)):
     # Extract the requested size from the payload
     bytes_received = await request.body()
 
@@ -177,8 +180,32 @@ async def authenticate(sid, token):
         print(f"Unknown error in authenticate {e}")
 
 
-# TODO: Missing functionality
-# @sio.on("remove_room")
+@sio.on("remove_room")
+async def remove_room(sid, room_id):
+    async with sio.session(sid) as session:
+
+        # For checking if the user is authenticated
+        username = session["username"]  # noqa
+
+        async with db.transaction():
+
+            print("Here1")
+
+            if not await check_roomid_exists(db, room_id):
+                await sio.emit("remove_room_response", data=(False, "Room does not exist", None), to=sid)
+                print("Here1.5")
+                raise ValueError(f"Unknown room id: {room_id}")
+
+            print("Here2")
+
+            await delete_room_by_id(db, room_id)
+
+            print("Here3")
+
+            await sio.emit("remove_room_response", data=(True, "", room_id), room=room_id)
+            print("Here3.5")
+            await sio.close_room(room_id)
+            print("Here4")
 
 
 @sio.on("create_room")
