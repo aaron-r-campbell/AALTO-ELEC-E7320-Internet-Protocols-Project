@@ -2,14 +2,14 @@
 
 ## General
 - [X] Login
-- [ ] Auth (for chat membership, etc)
+- [x] Auth (for chat membership, etc)
 - [X] Latency to server
 - [X] Latency to peer
-- [ ] Status of peer
+- [x] Status of peer
 
 ## Chat
 - [X] Create
-- [ ] Destroy
+- [x] Destroy
 - [X] Add member
 - [X] Chat (realtime)
 
