@@ -36,7 +36,7 @@
     <div id="sidebar">
         <UserInfo bind:user />
         <CreateRoom />
-        <ChatSelector {handleRoomSelection} />
+        <ChatSelector {handleRoomSelection} {selectedRoomID} />
         <PeerInfo />
         <DownThroughputTest />
         <UploadThroughputTest />
