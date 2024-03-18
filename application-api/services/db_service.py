@@ -2,19 +2,6 @@ from databases import Database
 from typing import List, Dict, Any
 
 
-# async def insert_room(db: Database, room_name: str) -> int:
-#     query = "INSERT INTO rooms (name) VALUES (:name) RETURNING id"
-#     values = {"name": room_name}
-#     room_id = await db.execute(query=query, values=values)
-#     return room_id
-
-
-# async def insert_user_room_mapping(db: Database, user_name: str, room_id: int) -> None:
-#     query = "INSERT INTO user_room_mappings(user_name, room_id) VALUES (:user_name, :room_id)"
-#     values = {"user_name": user_name, "room_id": room_id}
-#     await db.execute(query=query, values=values)
-
-
 async def check_user_exists(db: Database, username: str) -> bool:
     query = "SELECT * FROM users WHERE username = :username"
     values = {"username": username}
@@ -65,16 +52,14 @@ async def get_messages(db: Database, room_id: int, offset: int = 0):
 async def get_user_rooms(db: Database, username: str):
     # TODO: Check that username exists
     # TODO: async with db.transaction():
-    query = "SELECT rooms.id AS room_id, rooms.name AS room_name FROM user_room_mappings, rooms WHERE rooms.id = user_room_mappings.room_id AND user_name = :username" # noqa
+    query = "SELECT rooms.id AS room_id, rooms.name AS room_name FROM user_room_mappings, rooms WHERE rooms.id = user_room_mappings.room_id AND user_name = :username"  # noqa
     values = {"username": username}
     result = await db.fetch_all(query=query, values=values)
 
     room_ids = [
-        {
-            "room_id": record["room_id"],
-            "room_name": record["room_name"]
-         }
-        for record in result]
+        {"room_id": record["room_id"], "room_name": record["room_name"]}
+        for record in result
+    ]
 
     return room_ids
 
@@ -85,11 +70,9 @@ async def get_all_user_room_mappings(db: Database) -> List[int]:
     result = await db.fetch_all(query=query)
 
     mappings = [
-        {
-            "room_id": record["room_id"],
-            "user_name": record["user_name"]
-         }
-        for record in result]
+        {"room_id": record["room_id"], "user_name": record["user_name"]}
+        for record in result
+    ]
 
     return mappings
 
@@ -122,10 +105,7 @@ async def add_user_to_chat_room(db: Database, username: str, room_id: int):
     # TODO: Check that username exists, Check that room_id exists
     # TODO: async with db.transaction():
     query = "INSERT INTO user_room_mappings (user_name, room_id) VALUES (:username, :room_id)"
-    values = {
-        "username": username,
-        "room_id": room_id
-        }
+    values = {"username": username, "room_id": room_id}
     await db.execute(query=query, values=values)
 
 
@@ -157,16 +137,10 @@ async def get_usernames_not_in_room(db: Database, room_id: int):
         );
         """
 
-    values = {
-        "room_id": room_id
-    }
+    values = {"room_id": room_id}
     result = await db.fetch_all(query=query, values=values)
 
-    users = [
-        {
-            "username": record["username"]
-         }
-        for record in result]
+    users = [{"username": record["username"]} for record in result]
 
     return users
 
@@ -228,13 +202,17 @@ async def delete_room_by_id(db: Database, room_id: int):
         values_rooms = {"room_id": room_id}
         await db.execute(query=query_rooms, values=values_rooms)
 
+
 async def save_file(db: Database, room_id, filename):
-    query = "INSERT INTO files (room_id, name) VALUES (:room_id, :filename) RETURNING id;"
+    query = (
+        "INSERT INTO files (room_id, name) VALUES (:room_id, :filename) RETURNING id;"
+    )
     values = {"room_id": room_id, "filename": filename}
     file_id = await db.execute(query=query, values=values)
     return file_id
 
-async def get_file(db: Database, file_id): 
+
+async def get_file(db: Database, file_id):
     query = "SELECT * FROM files WHERE id = :file_id;"
     values = {"file_id": file_id}
     record = await db.fetch_one(query=query, values=values)
