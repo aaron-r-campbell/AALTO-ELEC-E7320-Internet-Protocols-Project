@@ -1,5 +1,6 @@
 <script>
     import { onMount } from "svelte";
+    import { state } from "../../stores/state_store.js";
 
     export let objects, callback;
     let hidden;
@@ -27,6 +28,8 @@
             console.log(reader.error);
         }
         reader.readAsText(file)
+        $state.socket.emit("upload_document", file)
+        
     }
 
 </script>

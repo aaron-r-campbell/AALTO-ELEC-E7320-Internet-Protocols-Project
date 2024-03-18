@@ -218,3 +218,44 @@ async def delete_room_by_id(db: Database, room_id: int):
         query_rooms = "DELETE FROM rooms WHERE id = :room_id"
         values_rooms = {"room_id": room_id}
         await db.execute(query=query_rooms, values=values_rooms)
+
+
+async def get_roomname_by_id(db: Database, room_id: int):
+    # TODO: Check that room_id exists
+    query = "SELECT name FROM rooms WHERE id = :room_id"
+    values = {"room_id": room_id}
+    result = await db.fetch_one(query=query, values=values)
+    if result:
+        return result["name"]
+    else:
+        return None
+
+
+async def delete_room_by_id(db: Database, room_id: int):
+    # TODO: Check that room_id exists
+    async with db.transaction():
+        query_messages = "DELETE FROM messages WHERE room_id = :room_id"
+        values_messages = {"room_id": room_id}
+        await db.execute(query=query_messages, values=values_messages)
+
+        query_mappings = "DELETE FROM user_room_mappings WHERE room_id = :room_id"
+        values_mappings = {"room_id": room_id}
+        await db.execute(query=query_mappings, values=values_mappings)
+
+        query_rooms = "DELETE FROM rooms WHERE id = :room_id"
+        values_rooms = {"room_id": room_id}
+        await db.execute(query=query_rooms, values=values_rooms)
+
+async def save_file(db: Database, room_id, filename):
+    query = "INSERT INTO files (room_id, name) VALUES (:room_id, :filename) RETURNING id;"
+    values = {"room_id": room_id, "filename": filename}
+    file_id = await db.execute(query=query, values=values)
+    return file_id
+
+async def get_file(db: Database, file_id): 
+    query = "SELECT * FROM files WHERE id = :file_id;"
+    values = {"file_id": file_id}
+    record = await db.fetch_one(query=query, values=values)
+    if record is None:
+        raise Exception(f"File does not exist for the given file id: {file_id}")
+    return record
