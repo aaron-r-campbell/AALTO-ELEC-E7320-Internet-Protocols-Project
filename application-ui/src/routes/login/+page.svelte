@@ -7,7 +7,7 @@
 		password = "";
 
 	const submit = async () => {
-		const response = await axios.post("/api/login", { username, password });
+		const response = await axios.post("/api/token", { username, password });
 
 		if (response.status === 200) {
 			// Update the token

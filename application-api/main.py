@@ -36,7 +36,6 @@ app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/token")
-@app.post("/login")
 async def login(request: Request):
     try:
         data = await request.json()
