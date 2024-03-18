@@ -4,13 +4,13 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Response  # noqa
 # from fastapi.responses import JSONResponse
 from jose import JWTError
 from datetime import datetime
-# import json
+import json
 
 # import asyncpg
 import socketio
 # from models import Room
-from typing import Dict
-
+from typing import Dict, List
+from .models.data import DocumentItem
 from utils.db_util import lifespan, db
 from utils.auth_util import create_jwt_token, check_jwt_token
 from services.db_service import (
@@ -24,6 +24,8 @@ from services.db_service import (
     add_user_to_chat_room,
     get_usernames_not_in_room,
     create_chat_room,
+    save_file,
+    get_file
     check_roomid_exists,
     # get_roomname_by_id,
     delete_room_by_id
@@ -385,7 +387,6 @@ async def send_message(sid, message, room_id):
             # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
             await sio.emit("receive_msg", data=payload, to=sid)
             raise Exception("no permission to send messages to the room")
-
         # Save the message
         await save_message(db, username, room_id, message)
         # print("Message has been saved")
@@ -420,6 +421,180 @@ async def send_message(sid, message, room_id):
 
     except Exception as e:
         print(f"Exception occurred while sending message: {e}")
+
+# keep track of document structure and its order.
+
+# counter = 0
+
+# def create_unique_position_between(a: str, b: str, username: str) -> str:
+#     global counter
+#     # A globally unique new string, in the form of a causal dot.
+#     unique_str = f"{username}{counter}"
+#     counter += 1
+
+#     if a is not None and b is not None:
+#         if not b.startswith(a):
+#             # a is not a prefix of b.
+#             return f"{a}{unique_str}R"
+#         else:
+#             # a is a strict prefix of b.
+#             b_with_l = f"{b[:-1]}L"
+#             return f"{b_with_l}{unique_str}R"
+#     else:
+#         # Edge cases.
+#         if b is None:
+#             # Treat a (possibly undefined) as not a prefix of b.
+#             return f"{a or ''}{unique_str}R"
+#         else:
+#             # Treat a (undefined) as a strict prefix of b.
+#             b_with_l = f"{b[:-1]}L"
+#             return f"{b_with_l}{unique_str}R"
+
+
+# def serialize(obj):
+#     if isinstance(obj, DocumentItem):
+#         return obj.to_json
+#     else:
+#         raise TypeError("Object of type MyClass is not JSON serializable")
+
+files : map[int, List[DocumentItem]] = {}
+
+@sio.on("upload_document")
+async def upload_document(sid, room_id, json_data, filename):
+    try:
+        print(f"upload_document called {json_data} to room id: {room_id}")
+        room_id = int(room_id)
+
+        # Get the user name from the session
+        session = await sio.get_session(sid)
+        
+        # TODO: Error if username doesn't exist
+        username = session["username"]
+
+        check_user_exists_in_room(sid, "upload_document_response", username, room_id)
+
+        file_id = await save_file(db, room_id, filename)
+        files[file_id] = []
+
+        data = json.loads(json_data)
+        for item in data:
+            print(f'value: {item["value"]}, position: {item["position"]}')
+            document_item = DocumentItem(value=item["value"], position=item["position"])
+            files[file_id].append(document_item)
+
+        data = [item.__dict__ for item in files[file_id]]
+
+        response = {
+            "successful": True,
+            "data": data,
+            "document_id": file_id
+        }
+        await sio.emit("upload_file_response", room=room_id, data=response)
+
+    except Exception as e:
+        print(f'Exception occured while uploading document: {e}')
+
+
+@sio.on("join_file_edit")
+async def join_file_edit(sid, file_id):
+    try:
+        print(f"join_document_edit called for document id: {file_id}")
+        file_id = int(file_id)
+
+        # Get the user name from the session
+        session = await sio.get_session(sid)
+
+        # TODO: Error if username doesn't exist
+        username = session["username"]
+
+        file = await get_file(db, file_id)
+        room_id = file['room_id']
+
+        check_user_exists_in_room(sid, "join_file_edit_response", username, room_id)
+
+        await sio.enter_room(sid=sid, room=file_id)
+        file_id = file['id']
+        response = {
+            "successful": True,
+            "Description": f"Joined the document editing successfully to id: {file_id}",
+            "data": files[file_id]
+        }
+        await sio.emit("join_file_edit_response", room=sid, data=response)
+    except Exception as e:
+        print(f'Exception occured while joining the room for document editing')
+
+
+@sio.on("update_file")
+async def update_document(sid, file_id, operation_type, char, position):
+    try:
+        print(f'update_document has been called')
+        file_id = int(file_id)
+
+        # Get the user name from the session
+        session = await sio.get_session(sid)
+
+        # TODO: Error if username doesn't exist
+        username = session["username"]
+
+        file = await get_file(db, file_id)
+        room_id = file['room_id']
+        check_user_exists_in_room(sid, "update_file_response", username, room_id)
+        
+        data = {
+            "operation_type": operation_type,
+            "file_id": file_id,
+            "char": char,
+            "position": position
+        }
+
+        response = {
+            "successful": True,
+            "description": "",
+            "data": data
+        }
+        await sio.emit("update_document_response", room=file_id, data=response)
+
+    except Exception as e:
+        print(f"error while updateing document: {e}")
+
+@sio.on("test_download")
+async def test_download(sid, _):
+    binary_payload = 0
+    for i in range(1024):
+        if i % 2 == 1:
+            binary_payload |= 1 << i
+
+    start_time = datetime.now()
+    end_time = datetime.now()
+    packets_sent = 0
+    # For future, grow the payload size based on connection speed to reduce the effect of latency.
+    print("Starting download")
+    while (end_time - start_time).total_seconds() < 10:  # Do for 10 seconds
+        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        await sio.emit("receive_throughput", data=binary_payload, to=sid)
+        packets_sent += 1
+        end_time = datetime.now()
+
+    throughput_kbps = (packets_sent * 1024) / (end_time - start_time).total_seconds()
+
+    print("GOT THROUGHPUT:", throughput_kbps)
+
+    # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+    await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
+
+
+# For the throughput tests, using socketio.SimpleClient.call can be used to wait for the messages to be sent
+# The basic emit doesn't wait for the message to be received.
+
+# client_total_bytes = {}
+
+# @sio.on("test_upload")
+# async def test_upload(sid):
+#     total = 0
+
+
+# @sio.on("test_latency")
+# async def test_latency(sid, timestamp):
 
 
 @sio.on("disconnect")
@@ -470,6 +645,18 @@ async def scheduled_ping():
         # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
         await sio.emit("ping", payload)
 
+
+async def check_user_exists_in_room(sid, event_to_emit, username, room_id):
+    if not await user_exists_in_room(db, username, room_id):
+        payload = {
+            "successful": False,
+            "description": "User is not in the room",
+            "data": None
+        }
+        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        await sio.emit(event_to_emit, data=payload, to=sid)
+        raise Exception("no permission to send messages to the room")       
+            
 
 if __name__ == "__main__":
     import uvicorn

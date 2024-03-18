@@ -25,6 +25,8 @@ CREATE TABLE messages (
 );
 
 CREATE TABLE files (
-    id SERIAL PRIMARY KEY
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL DEFAULT 'document', 
+    room_id INT REFERENCES rooms(id)
 );
 
