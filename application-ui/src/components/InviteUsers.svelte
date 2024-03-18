@@ -42,11 +42,14 @@
     console.log("Inviting user", selectedUser, "to chatroom");
     $state.socket.emit("add_to_room", selectedRoomID, selectedUser);
 
-    $state.socket.once("add_to_room_response", () => {
-      console.log("User added to room successfully");
-
-      // Refetch the list
-      $state.socket.emit("get_users_not_in_room", selectedRoomID);
+    $state.socket.once("add_to_room_response", (payload) => {
+      if (payload.successful) {
+        console.log("User added to room successfully");
+        // Refetch the list
+        $state.socket.emit("get_users_not_in_room", selectedRoomID);
+      } else {
+        console.error("Got error:", payload.description);
+      }
     });
   }
 </script>

@@ -4,6 +4,7 @@
 
     let rooms = [];
     export let handleRoomSelection;
+    export let selectedRoomID;
 
     onMount(async () => {
         try {
@@ -12,9 +13,16 @@
             $state.socket.emit("get_user_rooms");
 
             // We keep the listener as when a user is invited to a room, the same message is sent or when a user is invited to a room
-            $state.socket.on("return_user_rooms", (new_rooms) => {
-                console.log("GOT RETURN USER ROOMS:", new_rooms);
-                rooms = new_rooms;
+            $state.socket.on("return_user_rooms", (payload) => {
+                if (payload.successful) {
+                    console.log("GOT RETURN USER ROOMS:", payload.payload);
+                    rooms = payload.payload;
+                } else {
+                    console.error(
+                        "Did not get new user rooms:",
+                        payload.description,
+                    );
+                }
             });
             console.log("Fetched rooms:", rooms);
 
@@ -24,6 +32,11 @@
                     if (successful) {
                         console.log("Got 'Remove room' with room_id", room_id);
                         rooms = rooms.filter((x) => x.room_id !== room_id);
+
+                        // If the current room doesn't exist anymore, close the chat
+                        if (!rooms.some((r) => r.room_id === selectedRoomID)) {
+                            handleRoomSelection(null);
+                        }
                     } else {
                         console.error(description);
                     }

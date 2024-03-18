@@ -238,6 +238,10 @@ async def delete_room_by_id(db: Database, room_id: int):
         values_messages = {"room_id": room_id}
         await db.execute(query=query_messages, values=values_messages)
 
+        query_files = "DELETE FROM files WHERE room_id = :room_id"
+        values_files = {"room_id": room_id}
+        await db.execute(query=query_files, values=values_files)
+
         query_mappings = "DELETE FROM user_room_mappings WHERE room_id = :room_id"
         values_mappings = {"room_id": room_id}
         await db.execute(query=query_mappings, values=values_mappings)
