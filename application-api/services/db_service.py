@@ -95,31 +95,9 @@ async def get_all_user_room_mappings(db: Database) -> List[int]:
 
 
 async def get_all_users(db: Database) -> List[Dict[str, Any]]:
-    query = "SELECT username, active, last_seen FROM users"
-
-    result = await db.fetch_all(query=query)
-
-    users = [
-        {
-            "username": record["username"],
-            "active": record["active"]
-         }
-        for record in result]
-
-    return users
-
-
-async def set_user_activity(db: Database, username: str, active: bool):
-    # TODO: Check that username exists
-    # TODO: async with db.transaction():
-    query = "UPDATE users SET active = :active WHERE username = :username"
-
-    values = {
-        "username": username,
-        "active": active
-    }
-
-    await db.execute(query=query, values=values)
+    query = "SELECT username FROM users;"
+    response = await db.fetch_all(query=query)
+    return [dict(record) for record in response]
 
 
 async def create_chat_room(db: Database, chatroom_name: str, creator_username: str):

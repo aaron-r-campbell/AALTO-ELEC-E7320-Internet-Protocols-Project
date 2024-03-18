@@ -20,7 +20,6 @@ from services.db_service import (
     get_user,
     get_user_rooms,
     get_all_users,
-    set_user_activity,
     add_user_to_chat_room,
     get_usernames_not_in_room,
     create_chat_room,
@@ -132,9 +131,6 @@ async def authenticate(sid, token):
                 # Get rooms that user is in to register user to receive messages from them
                 user_rooms = await get_user_rooms(db, username)
 
-                # Update the user's active status in the database
-                await set_user_activity(db, username, True)
-
                 # fetch the list of users to inform that activity has changed
                 users = await get_all_users(db)
 
@@ -152,7 +148,7 @@ async def authenticate(sid, token):
 
             # Inform all users of the activity of the connecting user
             # TODO: Add successful, description, payload
-            user_update_payload = {"username": username, "active": True}
+            user_update_payload = {"username": username}
             await sio.emit("user_activities_update", user_update_payload, skip_sid=sid)
 
             # Send initiol ping just to display ping instantly
@@ -605,13 +601,7 @@ async def disconnect(sid):
         username = session["username"]
         user_sockets_mapping.pop(username)
 
-        print(f"Removing user {username} from active users")
-        await set_user_activity(db, username, False)
-
-        user_update_payload = {
-                "username": username,
-                "active": False
-            }
+        user_update_payload = {"username": username}
 
         # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
         await sio.emit("user_activities_update", user_update_payload, skip_sid=sid)

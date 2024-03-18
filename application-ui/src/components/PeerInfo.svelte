@@ -10,7 +10,7 @@
       // console.log("Received new user list:", new_user_activities);
 
       users = new_user_activities.map((user) => {
-        return { ...user, latency: "..." };
+        return { ...user, latency: null };
       });
     });
 
@@ -18,7 +18,7 @@
       // console.log("Got user list update:", new_user_status);
       users = users.map((user) => {
         if (user.username === new_user_status.username) {
-          return { ...new_user_status, latency: "..." };
+          return { ...new_user_status, latency: null };
         } else {
           return user;
         }
@@ -54,8 +54,8 @@
     <p>
       {user.username}
 
-      {#if user.active}
-        is online with latency {user.latency} ms
+      {#if user.latency}
+        is online with latency {user.latency || "..."} ms
       {:else}
         is offline
       {/if}

@@ -1,8 +1,6 @@
 CREATE TABLE users (
     username TEXT NOT NULL PRIMARY KEY UNIQUE,
     password TEXT NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT FALSE,
-    last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE rooms (
@@ -27,6 +25,7 @@ CREATE TABLE messages (
 CREATE TABLE files (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL DEFAULT 'document', 
-    room_id INT REFERENCES rooms(id)
+    room_id INT REFERENCES rooms(id),
+    content TEXT -- Json
 );
 
