@@ -10,7 +10,7 @@ import json
 import socketio
 # from models import Room
 from typing import Dict, List
-from .models.data import DocumentItem
+from models.data import DocumentItem
 from utils.db_util import lifespan, db
 from utils.auth_util import create_jwt_token, check_jwt_token
 from services.db_service import (
@@ -25,10 +25,10 @@ from services.db_service import (
     get_usernames_not_in_room,
     create_chat_room,
     save_file,
-    get_file
+    get_file,
     check_roomid_exists,
     # get_roomname_by_id,
-    delete_room_by_id
+    delete_room_by_id,
 )
 
 # FastAPI application
@@ -457,7 +457,7 @@ async def send_message(sid, message, room_id):
 #     else:
 #         raise TypeError("Object of type MyClass is not JSON serializable")
 
-files : map[int, List[DocumentItem]] = {}
+files : Dict[int, List[DocumentItem]] = {}
 
 @sio.on("upload_document")
 async def upload_document(sid, room_id, json_data, filename):
