@@ -23,6 +23,7 @@ from services.db_service import (
     get_file,
     check_roomid_exists,
     delete_room_by_id,
+    get_files,
 )
 
 # Initialize Socket.IO server
@@ -46,7 +47,7 @@ async def authenticate(sid, token):
     if not username:
         payload = {"successful": False, "description": "Authentication failed"}
         await sio.emit("authenticate_ack", payload, to=sid)
-    
+
     try:
         """
         A user is authenticated if their username is in the session["username"].
@@ -286,7 +287,7 @@ async def add_to_room(sid, room_id, new_user):
 
 
 @sio.on("get_user_rooms")
-async def get_user_chats(sid, _=None):
+async def get_room_files(sid, _=None):
     print("get_user_rooms sid:", sid)
     async with sio.session(sid) as session:
         # TODO: Error if username doesn't exist
@@ -409,6 +410,17 @@ async def upload_document(sid, room_id, json_data, filename):
 
     except Exception as e:
         print(f"Exception occured while uploading document: {e}")
+
+
+@sio.on("get_room_files")
+async def get_room_files(sid, room_id):
+    print("get_room_files sid:", sid)
+    async with sio.session(sid) as session:
+        # TODO: Error if username doesn't exist
+        username = session["username"]
+        files = await get_files(db=db, room_id=room_id)
+        payload = {"successful": True, "description": "", "files": files}
+        await sio.emit("return_room_files", payload, to=sid)
 
 
 @sio.on("join_file_edit")

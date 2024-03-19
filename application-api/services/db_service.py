@@ -211,6 +211,15 @@ async def save_file(db: Database, room_id, filename):
     file_id = await db.execute(query=query, values=values)
     return file_id
 
+async def get_files(db: Database, room_id: int):
+    # TODO: Check that room_id exists
+    # TODO: async with db.transaction():
+    query = "SELECT name, id FROM files WHERE room_id = :room_id ORDER BY name DESC"  # noqa
+    values = {"room_id": room_id}
+
+    files = await db.fetch_all(query=query, values=values)
+    return files
+
 
 async def get_file(db: Database, file_id):
     query = "SELECT * FROM files WHERE id = :file_id;"

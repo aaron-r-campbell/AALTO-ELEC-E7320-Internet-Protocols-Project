@@ -2,13 +2,13 @@
     import { onMount } from "svelte";
     import { state } from "../../stores/state_store.js";
 
-    export let objects, callback;
+    export let selectedRoomID;
     let hidden;
 
     onMount(() => {
         hidden = true;
-        console.log(hidden)
-    })
+        console.log(hidden);
+    });
 
     async function handleFileChange(event) {
         const file = event.target.files[0];
@@ -16,28 +16,41 @@
 
         const reader = new FileReader();
         reader.onload = () => {
-            objects = reader.result.split("").map((char, index) => {
-                const position = index + 0.5; // Assume halfway between characters
-                const obj = { value: char, position: position };
-                return obj;
+            const charlist = reader.result.split("");
+            const crdtArray = charlist.map((char, index) => {
+                return { value: char, position: index + 1.0 };
             });
-            callback(); // update the visible text
-            console.log(reader.result);
-        }
+            $state.socket.emit(
+                "upload_document",
+                selectedRoomID,
+                crdtArray,
+                file,
+            );
+            $state.socket.on("fetch_room_files_response", () => {
+                if (payload.successful) {
+                    console.log("Upload file successful");
+                } else {
+                    console.error("Upload file unsuccessful");
+                }
+            });
+        };
         reader.onerror = () => {
             console.log(reader.error);
-        }
-        reader.readAsText(file)
-        $state.socket.emit("upload_document", file)
-        
+        };
     }
-
 </script>
 
 <div>
-    <div class="model" class:hidden={hidden}>
+    <div class="model" class:hidden>
         <div class="content">
-            <button class="close-button" on:click={() =>{hidden = true; console.log('button clicked'); console.log(hidden)}}>&times;</button>
+            <button
+                class="close-button"
+                on:click={() => {
+                    hidden = true;
+                    console.log("button clicked");
+                    console.log(hidden);
+                }}>&times;</button
+            >
             <div class="group">
                 <label for="file">Upload your file</label>
                 <input
@@ -48,11 +61,19 @@
                     on:change={handleFileChange}
                 />
             </div>
-            <button type="submit" on:click={() => {hidden = true; console.log('button clicked')}}>Submit</button>
+            <button
+                type="submit"
+                on:click={() => {
+                    hidden = true;
+                    console.log("button clicked");
+                }}>Submit</button
+            >
         </div>
     </div>
 </div>
-<button class="bottom-right-button" on:click={() => hidden = false}>Upload</button>
+<button class="bottom-right-button" on:click={() => (hidden = false)}
+    >Upload</button
+>
 
 <style>
     .bottom-right-button {
@@ -61,40 +82,40 @@
         right: 20px; /* Adjust as needed */
     }
     .model {
-		position: fixed;
-		z-index: 9999;
-		left: 0;
-		top: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgb(0,0,0); 
-		background-color: rgba(0,0,0,0.4);
-	}
-	.content {
-		position: relative;
-		background-color: #fefefe;
-		margin: 15% auto;
-		padding: 20px;
-		border: 1px solid #888;
-		width: 80%;
-	}
-	.close-button {
-		position: absolute;
-		top: 0;
-		right: 0.5rem;
-		color: #aaa;
-		font-size: 28px;
-		font-weight: bold;
-		cursor: pointer;
-	}
-	.close-button:hover,
-	.close-button:focus {
-		color: black;
-		text-decoration: none;
-		cursor: pointer;
-	}
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgb(0, 0, 0);
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+    .content {
+        position: relative;
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+    }
+    .close-button {
+        position: absolute;
+        top: 0;
+        right: 0.5rem;
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .close-button:hover,
+    .close-button:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
 
     .hidden {
-		display: none;	
-	}
+        display: none;
+    }
 </style>
