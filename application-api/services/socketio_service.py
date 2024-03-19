@@ -10,19 +10,30 @@ from models.data import DocumentItem
 from utils.db_util import db
 from utils.auth_util import check_jwt_token
 from services.db_service import (
-    check_user_exists,
-    get_messages,
-    save_message,
-    user_exists_in_room,
-    get_user_rooms,
+    # Users
     get_all_users,
-    add_user_to_chat_room,
-    get_usernames_not_in_room,
-    create_chat_room,
-    save_file,
+    user_exists,
+    get_user,
+    # Rooms
+    create_room,
+    room_exists,
+    room_exists_by_name,
+    get_room_name,
+    delete_room,
+    # Mappings
+    get_all_user_room_mappings,
+    add_user_to_room,
+    user_exists_in_room,
+    get_users_not_in_room,
+    get_rooms_by_user,
+    # Messages
+    create_message,
+    get_messages_by_room,
+    # Files
+    create_file,
+    file_exists,
+    update_file,
     get_file,
-    check_roomid_exists,
-    delete_room_by_id,
 )
 
 # Initialize Socket.IO server
@@ -60,7 +71,7 @@ async def authenticate(sid, token):
             # TODO: IDK what error this throws but should be handled. Currently goes to
             async with db.transaction():
                 # Get rooms that user is in to register user to receive messages from them
-                user_rooms = await get_user_rooms(db, username)
+                user_rooms = await get_rooms_by_user(db, username)
 
                 # fetch the list of users to inform that activity has changed
                 users = await get_all_users(db)
@@ -111,7 +122,7 @@ async def remove_room(sid, room_id):
 
             print("Here1")
 
-            if not await check_roomid_exists(db, room_id):
+            if not await room_exists(db, room_id):
                 await sio.emit(
                     "remove_room_response",
                     data=(False, "Room does not exist", None),
@@ -122,7 +133,7 @@ async def remove_room(sid, room_id):
 
             print("Here2")
 
-            await delete_room_by_id(db, room_id)
+            await delete_room(db, room_id)
 
             print("Here3")
 
@@ -160,14 +171,16 @@ async def create_room(sid, room_name):
         # TODO: Error if username doesn't exist
         username = session["username"]
 
-        # create a room
-        room_id = await create_chat_room(db, room_name, username)
-
-        # Add the creator to the sio room so they receive messages there
-        await sio.enter_room(sid, room_id)
+        async with db.transaction():
+            # create a room
+            room_id = await create_room(db, room_name, username)
+            # add creator to the room
+            await add_user_to_room(db, username, room_id)
+            # Add the creator to the sio room so they receive messages there
+            await sio.enter_room(sid, room_id)
 
         # Retrieves all users for the currrent user
-        rooms = await get_user_rooms(db=db, username=username)
+        rooms = await get_rooms_by_user(db=db, username=username)
         payload = {"successful": True, "description": "", "payload": rooms}
 
         # Update the room list of the creator
@@ -188,7 +201,7 @@ async def get_users_not_in_room(sid, room_id):
             payload = {"successful": False, "description": "Authentication failed"}
             await sio.emit("get_users_not_in_room_response", payload, to=sid)
             raise Exception("No permission to join the room")
-    usernames = await get_usernames_not_in_room(db, room_id)
+    usernames = await get_users_not_in_room(db, room_id)
 
     payload = {"successful": True, "data": usernames, "description": ""}
 
@@ -206,7 +219,7 @@ async def add_to_room(sid, room_id, new_user):
 
         async with db.transaction():
 
-            if not await check_user_exists(db, new_user):
+            if not await user_exists(db, new_user):
                 payload = {
                     "successful": False,
                     "description": "New user does not exist",
@@ -240,7 +253,7 @@ async def add_to_room(sid, room_id, new_user):
                 raise Exception("Invited user already exists in room")
 
             # Add user to the database
-            await add_user_to_chat_room(db, new_user, room_id)
+            await add_user_to_room(db, new_user, room_id)
 
             # If the user is currently online, notify them immediately
             if new_user in user_sockets_mapping:
@@ -250,7 +263,7 @@ async def add_to_room(sid, room_id, new_user):
                 await sio.enter_room(new_user_sid, room_id)
 
                 # Fetch the new list of rooms that the invited user is in
-                rooms = await get_user_rooms(db=db, username=new_user)
+                rooms = await get_rooms_by_user(db=db, username=new_user)
                 payload = {"successful": True, "description": "", "payload": rooms}
 
                 # Notify the invited user
@@ -291,7 +304,7 @@ async def get_user_chats(sid, _=None):
     async with sio.session(sid) as session:
         # TODO: Error if username doesn't exist
         username = session["username"]
-        rooms = await get_user_rooms(db=db, username=username)
+        rooms = await get_rooms_by_user(db=db, username=username)
         payload = {"successful": True, "description": "", "payload": rooms}
         print("ROOMS:", rooms)
         # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
@@ -346,7 +359,7 @@ async def send_message(sid, message, room_id):
             await sio.emit("receive_msg", data=payload, to=sid)
             raise Exception("no permission to send messages to the room")
         # Save the message
-        await save_message(db, username, room_id, message)
+        await create_message(db, username, room_id, message)
 
         # Prepare data to emit
         data = {
@@ -393,7 +406,7 @@ async def upload_document(sid, room_id, json_data, filename):
 
         check_user_exists_in_room(sid, "upload_document_response", username, room_id)
 
-        file_id = await save_file(db, room_id, filename)
+        file_id = await create_file(db, room_id, filename)
         files[file_id] = []
 
         data = json.loads(json_data)
