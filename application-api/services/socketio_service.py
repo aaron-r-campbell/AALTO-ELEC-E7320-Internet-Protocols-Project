@@ -1,5 +1,3 @@
-from fastapi import HTTPException  # noqa
-from jose import JWTError
 from datetime import datetime
 import json
 
@@ -49,11 +47,13 @@ async def connect(sid, env):
 
 @sio.on("authenticate")
 async def authenticate(sid, token):
+    username = check_jwt_token(token)
+    print(f"Authenticate received session token: {token}")
+    if not username:
+        payload = {"successful": False, "description": "Authentication failed"}
+        await sio.emit("authenticate_ack", payload, to=sid)
+    
     try:
-        # TODO: This throws an HTTPException, which needs to be handled in the error cases
-        username = check_jwt_token(token)
-        print(f"Authenticate received session token: {token}")
-
         """
         A user is authenticated if their username is in the session["username"].
         In the future, the username should be accessed through this.
@@ -99,17 +99,6 @@ async def authenticate(sid, token):
                 # Start scheduled pings
                 sio.start_background_task(scheduled_ping)
                 sio.background_task_started = True
-
-    except HTTPException as e:
-        payload = {"successful": False, "description": "Authentication failed"}
-        await sio.emit("authenticate_ack", payload, to=sid)
-        print(f"Authentication HTTPException: {e}")
-
-    except JWTError as e:
-        payload = {"successful": False, "description": "Authentication failed"}
-        # TODO: await sio.emit("authenticate_ack", data=(succesful=false, description="autherror", payload=None), to=sid)  # noqa
-        await sio.emit("authenticate_ack", payload, to=sid)
-        print(f"Authentication JWTError: {e}")
 
     except Exception as e:
         payload = {"successful": False, "description": "Authentication failed"}
@@ -388,9 +377,6 @@ async def send_message(sid, message, room_id):
 
     except ValueError as ve:
         print(f"ValueError: {ve}")
-
-    except JWTError as e:
-        print(f"JWT ERROR: {e}")
 
     except Exception as e:
         print(f"Exception occurred while sending message: {e}")

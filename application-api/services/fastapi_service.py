@@ -34,9 +34,16 @@ async def login(request: Request):
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
-# TODO: Add authentication
 @router.get("/throughput_download")
 async def download(request: Request, username: str = Depends(check_jwt_token)):
+    # Raise an exception if jwt is invalid
+    if not username:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     # Extract the requested size from the payload
     try:
         size_kb = int(request.query_params.get("size_kb", 1))
@@ -56,9 +63,16 @@ async def download(request: Request, username: str = Depends(check_jwt_token)):
     return Response(content=data, media_type="application/octet-stream")
 
 
-# TODO: Add authentication
 @router.post("/throughput_upload")
 async def upload(request: Request, username: str = Depends(check_jwt_token)):
+    # Raise an exception if jwt is invalid
+    if not username:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     # Extract the requested size from the payload
     bytes_received = await request.body()
 

@@ -1,7 +1,7 @@
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from dotenv import load_dotenv
 import os
 
@@ -29,16 +29,11 @@ def create_jwt_token(data: dict, expires_delta: timedelta = None):
 
 
 def check_jwt_token(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Invalid credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ENCRYPTION_ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
-            raise credentials_exception
+            return None
         return username
     except JWTError:
-        raise credentials_exception
+        return None
