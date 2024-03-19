@@ -14,7 +14,7 @@ async def login(request: Request):
         data = await request.json()
         username = data.get("username")
         password = data.get("password")
-    except:
+    except Exception:
         raise HTTPException(status_code=400, detail="Payload not valid JSON")
 
     if not username or not password:

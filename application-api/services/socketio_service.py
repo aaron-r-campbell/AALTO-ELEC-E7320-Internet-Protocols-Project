@@ -46,7 +46,7 @@ async def authenticate(sid, token):
     if not username:
         payload = {"successful": False, "description": "Authentication failed"}
         await sio.emit("authenticate_ack", payload, to=sid)
-    
+
     try:
         """
         A user is authenticated if their username is in the session["username"].
@@ -109,29 +109,20 @@ async def remove_room(sid, room_id):
 
         async with db.transaction():
 
-            print("Here1")
-
             if not await check_roomid_exists(db, room_id):
                 await sio.emit(
                     "remove_room_response",
                     data=(False, "Room does not exist", None),
                     to=sid,
                 )
-                print("Here1.5")
                 raise ValueError(f"Unknown room id: {room_id}")
 
-            print("Here2")
-
             await delete_room_by_id(db, room_id)
-
-            print("Here3")
 
             await sio.emit(
                 "remove_room_response", data=(True, "", room_id), room=room_id
             )
-            print("Here3.5")
             await sio.close_room(room_id)
-            print("Here4")
 
 
 @sio.on("create_room")
@@ -437,13 +428,13 @@ async def join_file_edit(sid, file_id):
         }
         await sio.emit("join_file_edit_response", room=sid, data=response)
     except Exception as e:
-        print(f"Exception occured while joining the room for document editing")
+        print(f"Exception occured while joining the room for document editing: {e}")
 
 
 @sio.on("update_file")
 async def update_document(sid, file_id, operation_type, char, position):
     try:
-        print(f"update_document has been called")
+        print("update_document has been called")
         file_id = int(file_id)
 
         # Get the user name from the session
