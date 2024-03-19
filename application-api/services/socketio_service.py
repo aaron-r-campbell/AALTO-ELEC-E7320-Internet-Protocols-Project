@@ -321,7 +321,7 @@ async def fetch_room_messages(sid, room_id):
             await sio.emit("fetch_room_messages_response", payload, to=sid)
             raise Exception("No permission to join the room")
 
-        messages = await get_messages(db, room_id)
+        messages = await get_messages_by_room(db, room_id)
         payload = {"successful": True, "description": "", "messages": messages}
 
         print(messages)

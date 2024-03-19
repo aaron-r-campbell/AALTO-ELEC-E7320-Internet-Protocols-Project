@@ -30,7 +30,7 @@ async def get_user(db: Database, username: str, password: str) -> Dict:
 
 async def create_room(db: Database, chatroom_name: str, creator_username: str) -> int:
     if not await user_exists(db=db, username=creator_username):
-        raise DatabaseException(f"User {creator_username} does not exist.")
+        raise Exception(f"User {creator_username} does not exist.")
     query = "INSERT INTO rooms name VALUES :name RETURNING room_id;"
     values = {"name": chatroom_name}
     room_id = await db.execute(query=query, values=values)
@@ -54,7 +54,7 @@ async def room_exists_by_name(db: Database, room_name: str) -> bool:
 async def get_room_name(db: Database, room_id: int) -> str:
     async with db.transaction():
         if not await room_exists(db=db, room_id=room_id):
-            raise DatabaseException(f"Room with id {room_id} does not exist.")
+            raise Exception(f"Room with id {room_id} does not exist.")
         query = "SELECT name FROM rooms WHERE id = :room_id;"
         values = {"room_id": room_id}
         response = await db.fetch_one(query=query, values=values)
@@ -64,7 +64,7 @@ async def get_room_name(db: Database, room_id: int) -> str:
 async def delete_room(db: Database, room_id: int):
     async with db.transaction():
         if not await room_exists(db=db, room_id=room_id):
-            raise DatabaseException(f"Room with id {room_id} does not exist.")
+            raise Exception(f"Room with id {room_id} does not exist.")
         messages_query = "DELETE FROM messages WHERE room_id = :room_id;"
         messages_values = {"room_id": room_id}
         await db.execute(query=messages_query, values=messages_values)
@@ -90,9 +90,9 @@ async def get_all_user_room_mappings(db: Database) -> List[int]:
 async def add_user_to_room(db: Database, username: str, room_id: int):
     async with db.transaction():
         if not await user_exists(db=db, username=username):
-            raise DatabaseException(f"User {username} does not exist.")
+            raise Exception(f"User {username} does not exist.")
         if not await room_exists(db=db, room_id=room_id):
-            raise DatabaseException(f"Room with id {room_id} does not exist.")
+            raise Exception(f"Room with id {room_id} does not exist.")
         query = "INSERT INTO user_room_mappings (user_name, room_id) VALUES (:username, :room_id);"
         values = {"username": username, "room_id": room_id}
         await db.execute(query=query, values=values)
@@ -101,9 +101,9 @@ async def add_user_to_room(db: Database, username: str, room_id: int):
 async def user_exists_in_room(db: Database, username: str, room_id: int) -> bool:
     async with db.transaction():
         if not await user_exists(db=db, username=username):
-            raise DatabaseException(f"User {username} does not exist.")
+            raise Exception(f"User {username} does not exist.")
         if not await room_exists(db=db, room_id=room_id):
-            raise DatabaseException(f"Room with id {room_id} does not exist.")
+            raise Exception(f"Room with id {room_id} does not exist.")
         query = "SELECT * FROM user_room_mappings WHERE user_name = :username AND room_id = :room_id;"
         values = {"username": username, "room_id": room_id}
         response = await db.fetch_one(query=query, values=values)
@@ -113,7 +113,7 @@ async def user_exists_in_room(db: Database, username: str, room_id: int) -> bool
 async def get_users_not_in_room(db: Database, room_id: int) -> List[str]:
     async with db.transaction():
         if not await room_exists(db=db, room_id=room_id):
-            raise DatabaseException(f"Room with id {room_id} does not exist.")
+            raise Exception(f"Room with id {room_id} does not exist.")
         query = """
             SELECT username
             FROM users
@@ -132,7 +132,7 @@ async def get_users_not_in_room(db: Database, room_id: int) -> List[str]:
 async def get_rooms_by_user(db: Database, username: str) -> List[Dict]:
     async with db.transaction():
         if not await user_exists(db=db, username=username):
-            raise DatabaseException(f"User {username} does not exist.")
+            raise Exception(f"User {username} does not exist.")
         query = "SELECT rooms.id AS room_id, rooms.name AS room_name FROM user_room_mappings, rooms WHERE rooms.id = user_room_mappings.room_id AND user_name = :username;"  # noqa
         values = {"username": username}
         response = await db.fetch_all(query=query, values=values)
@@ -145,9 +145,9 @@ async def get_rooms_by_user(db: Database, username: str) -> List[Dict]:
 async def create_message(db: Database, sender: str, room_id: int, content: str) -> int:
     async with db.transaction():
         if not await user_exists(db=db, username=sender):
-            raise DatabaseException(f"User {sender} does not exist.")
+            raise Exception(f"User {sender} does not exist.")
         if not await room_exists(db=db, room_id=room_id):
-            raise DatabaseException(f"Room with id {room_id} does not exist.")
+            raise Exception(f"Room with id {room_id} does not exist.")
         query = "INSERT INTO messages (sender, room_id, content) VALUES (:sender, :room_id, :content) RETURNING id;"
         values = {"sender": sender, "room_id": room_id, "content": content}
         message_id = await db.execute(query=query, values=values)
@@ -159,7 +159,7 @@ async def get_messages_by_room(
 ) -> List[Dict]:
     async with db.transaction():
         if not await room_exists(db=db, room_id=room_id):
-            raise DatabaseException(f"Room with id {room_id} does not exist.")
+            raise Exception(f"Room with id {room_id} does not exist.")
         query = "SELECT sender as sender, content, timestamp FROM messages WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 50 OFFSET :offset"  # noqa
         values = {"room_id": room_id, "offset": offset}
         response = await db.fetch_all(query=query, values=values)
@@ -194,7 +194,7 @@ async def update_file(db: Database, file_id: str, content: str):
 async def get_file(db: Database, file_id: str) -> Dict:
     async with db.transaction():
         if not file_exists(db=db, file_id=file_id):
-            raise DatabaseException(f"File with id {file_id} does not exist.")
+            raise Exception(f"File with id {file_id} does not exist.")
         query = "SELECT * FROM files WHERE id = :file_id;"
         values = {"file_id": file_id}
         response = await db.fetch_one(query=query, values=values)
