@@ -45,8 +45,8 @@ async def room_exists(db: Database, room_id: str) -> bool:
 
 
 async def room_exists_by_name(db: Database, room_name: str) -> bool:
-    query = "SELECT EXISTS(SELECT 1 FROM rooms WHERE name = :roomname);"
-    values = {"roomname": room_name}
+    query = "SELECT EXISTS(SELECT 1 FROM rooms WHERE name = :room_name);"
+    values = {"room_name": room_name}
     response = await db.execute(query=query, values=values)
     return bool(response)
 
