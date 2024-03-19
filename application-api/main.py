@@ -1,5 +1,5 @@
 from fastapi import FastAPI  # noqa
-from socketio import AsyncServer, ASGIApp
+from fastapi.middleware.cors import CORSMiddleware
 
 from utils.db_util import lifespan
 from services import fastapi_service, socketio_service
@@ -7,19 +7,20 @@ from services import fastapi_service, socketio_service
 # Initialize FastAPI application
 app = FastAPI(lifespan=lifespan)
 
-# Initialize Socket.IO server
-sio = AsyncServer(cors_allowed_origins="*", async_mode="asgi")
-sio.background_task_started = False
+# Add FastAPI routes
+app.include_router(fastapi_service.router)
 
-# Wrap with ASGI application
-socket_app = ASGIApp(sio)
-app.mount("/", socket_app)
+origins = ["http://localhost:7800", "*"]
 
-# Initialize FastAPI service
-fastapi_service.setup(app)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Initialize Socket.IO service
-socketio_service.setup(sio)
+app.mount("/", socketio_service.socket_app)
 
 if __name__ == "__main__":
     import uvicorn
