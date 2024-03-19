@@ -39,12 +39,6 @@ socket_app = socketio.ASGIApp(sio)
 user_sockets_mapping: Dict[str, str] = {}
 
 
-@sio.on("connect")
-async def connect(sid, env):
-    """Apparently socketio does automatically send a "connect" event on succesful connect so this isn't needed"""
-    pass
-
-
 @sio.on("authenticate")
 async def authenticate(sid, token):
     username = check_jwt_token(token)
