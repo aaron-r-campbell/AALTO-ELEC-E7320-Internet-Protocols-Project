@@ -39,7 +39,7 @@ async def download(request: Request, username: str = Depends(check_jwt_token)):
     try:
         size_kb = int(request.query_params.get("size_kb", 1))
     except Exception:
-        raise HTTPException(status_code=400, detail="Unknown error")
+        raise HTTPException(status_code=400, detail="Integer url parameter size_kb is required.")
 
     print("DOWNLOAD SIZE:", size_kb)
 
