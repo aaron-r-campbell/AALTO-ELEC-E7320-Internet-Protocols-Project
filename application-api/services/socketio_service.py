@@ -49,6 +49,29 @@ socket_app = socketio.ASGIApp(sio)
 # Is needed for inviting other users to a chatroom
 user_sockets_mapping: Dict[str, str] = {}
 
+files: Dict[int, List[DocumentItem]] = {}
+
+
+async def scheduled_ping():
+    while True:
+        await sio.sleep(10)
+        payload = str(datetime.now())
+        print("Emitting payload:", payload)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
+        await sio.emit("ping", payload)
+
+
+async def check_user_exists_in_room(sid, event_to_emit, username, room_id):
+    if not await user_exists_in_room(db, username, room_id):
+        payload = {
+            "successful": False,
+            "description": "User is not in the room",
+            "data": None,
+        }
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
+        await sio.emit(event_to_emit, data=payload, to=sid)
+        raise Exception("no permission to send messages to the room")
+
 
 @sio.on("authenticate")
 async def authenticate(sid, token):
@@ -380,9 +403,6 @@ async def send_message(sid, message, room_id):
         print(f"Exception occurred while sending message: {e}")
 
 
-files: Dict[int, List[DocumentItem]] = {}
-
-
 @sio.on("upload_document")
 async def upload_document(sid, room_id, json_data, filename):
     try:
@@ -527,24 +547,3 @@ async def ping_ack(sid, time_string):
 
         # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("ping_result", data=(time_difference, username))
-
-
-async def scheduled_ping():
-    while True:
-        await sio.sleep(10)
-        payload = str(datetime.now())
-        print("Emitting payload:", payload)
-        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
-        await sio.emit("ping", payload)
-
-
-async def check_user_exists_in_room(sid, event_to_emit, username, room_id):
-    if not await user_exists_in_room(db, username, room_id):
-        payload = {
-            "successful": False,
-            "description": "User is not in the room",
-            "data": None,
-        }
-        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
-        await sio.emit(event_to_emit, data=payload, to=sid)
-        raise Exception("no permission to send messages to the room")
