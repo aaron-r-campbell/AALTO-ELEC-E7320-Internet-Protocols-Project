@@ -12,26 +12,17 @@ router = APIRouter()
 async def login(request: Request):
     try:
         data = await request.json()
-    except Exception:
+        username = data.get("username")
+        password = data.get("password")
+    except:
         raise HTTPException(status_code=400, detail="Payload not valid JSON")
 
-    username = data.get("username")
-    password = data.get("password")
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Missing username or password")
+    if not await get_user(db, username, password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    if not username:
-        raise HTTPException(status_code=400, detail="Missing username")
-    if not password:
-        raise HTTPException(status_code=400, detail="Missing password")
-
-    # Execute the SQL query using databases
-    user = await get_user(db, username, password)
-
-    if user:
-        return {
-            "token_type": "bearer",
-            "token": create_jwt_token(data={"sub": username}),
-        }
-    raise HTTPException(status_code=401, detail="Invalid credentials")
+    return {"token_type": "bearer", "token": create_jwt_token(data={"sub": username})}
 
 
 @router.get("/throughput_download")
