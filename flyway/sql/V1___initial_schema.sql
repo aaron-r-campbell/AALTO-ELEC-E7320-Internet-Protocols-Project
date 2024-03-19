@@ -1,6 +1,6 @@
 CREATE TABLE users (
     username TEXT NOT NULL PRIMARY KEY UNIQUE,
-    password TEXT NOT NULL,
+    password TEXT NOT NULL
 );
 
 CREATE TABLE rooms (
