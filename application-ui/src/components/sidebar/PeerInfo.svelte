@@ -49,17 +49,31 @@
   });
 </script>
 
-<h2>Users</h2>
-<div style="display: flex; flex-direction: column; gap: 8px;">
+<h2>User Statuses</h2>
+<div
+  style="display: flex; gap: 8px; flex-grow: 1; flex-wrap: wrap; overflow-y: scroll; overflow-x: hidden; color: var(--text-color)"
+>
   {#each users as user}
-    <span>
+    <div
+      class="pill"
+      style={user.latency
+        ? "background-color: var(--primary-green);"
+        : "background-color: #ccc;"}
+    >
       {user.username}
-
       {#if user.latency}
-        is online with latency {user.latency || "..."} ms
-      {:else}
-        is offline
+        ({user.latency} ms)
       {/if}
-    </span>
+    </div>
   {/each}
 </div>
+
+<style>
+  .pill {
+    border-radius: 16px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+  }
+</style>

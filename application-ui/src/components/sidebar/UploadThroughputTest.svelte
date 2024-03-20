@@ -1,70 +1,96 @@
 <script>
   import axios from "axios";
 
-  let throughputMbps = null;
-  let sizeKB = 1024; // Default size: 1 MB
-  let isDisabled = false;
+  let modalContent = [];
+  let testRunning = false;
+  let modalVisible = false;
 
-  // Function to initiate the download request
   const uploadTest = async () => {
-    try {
-      let delay_milliseconds = 0;
+    let sizeMB = 1,
+      totalSizeMB = 0,
+      totalDurationsMilliseconds = 0;
 
-      while (delay_milliseconds < 5000) {
-        const payload = new Uint8Array(sizeKB * 1024).fill("A".charCodeAt(0));
+    setModal(true);
+    testRunning = true;
 
-        const start = Date.now();
+    while (testRunning && sizeMB <= 1024) {
+      const start = Date.now();
 
-        const response = await axios.post(
-          "/api/throughput_upload",
-          payload.buffer,
-          {
-            headers: {
-              "Content-Type": "application/octet-stream",
-            },
-            responseType: "json",
+      try {
+        const payload = new Uint8Array(sizeMB * 1024 * 1024);
+        crypto.getRandomValues(payload);
+        await axios.post("/api/throughput_upload", payload.buffer, {
+          headers: {
+            "Content-Type": "application/octet-stream",
           },
-        );
-
-        const end = Date.now();
-
-        delay_milliseconds = end - start;
-
-        console.log("Response:", response.data);
-        console.log("Delay milliseconds:", delay_milliseconds);
-
-        if (delay_milliseconds > 0) {
-          throughputMbps = Math.trunc(
-            (8 * sizeKB) / (delay_milliseconds / 1000) / 1024,
-          );
-        }
-
-        sizeKB = sizeKB * 2;
+          responseType: "json",
+        });
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        modalContent = [
+          ...modalContent,
+          "Error uploading file. Please try again.",
+        ];
+        break;
       }
-    } catch (error) {
-      console.error("Error:", error.response.data);
+
+      const end = Date.now();
+      const durationMilliseconds = end - start;
+
+      modalContent = [
+        ...modalContent,
+        `Uploaded ${sizeMB} MB file in ${durationMilliseconds} ms`,
+      ];
+
+      if (durationMilliseconds > 0) {
+        totalSizeMB += sizeMB;
+        totalDurationsMilliseconds += durationMilliseconds;
+      }
+
+      if (durationMilliseconds >= 5000) break;
+
+      sizeMB *= 2;
     }
+
+    modalContent = [
+      ...modalContent,
+      `Upload throughput estimate: ${Math.trunc(8000 * (totalSizeMB / totalDurationsMilliseconds))} Mbps`,
+    ];
+
+    testRunning = false;
   };
 
-  const handleSubmit = async () => {
-    isDisabled = true;
-    await uploadTest();
-    isDisabled = false;
-  };
+  function setModal(visible) {
+    modalVisible = visible;
+  }
 </script>
 
 <div>
   <button
-    on:click={handleSubmit}
-    disabled={isDisabled}
+    on:click={uploadTest}
+    disabled={testRunning}
     class="fw"
-    style={isDisabled ? "background-color: grey; cursor: not-allowed;" : ""}
+    style={testRunning ? "background-color: grey; cursor: not-allowed; width: 50%;" : "width: 50%;"}
   >
-    Upload test
+    Upload Test
   </button>
-  {#if throughputMbps !== null}
-    <p>Upload throughput estimate: {throughputMbps} Mbps</p>
-  {:else}
-    <p>No upload throughput estimate available</p>
+  {#if modalVisible}
+    <div class="centerModal card" style="color: var(--text-color);">
+      <h2>Upload Test</h2>
+      {#each modalContent as element}
+        <p>{element}</p>
+      {/each}
+      <div style="display:flex; justify-content: flex-end; gap: 16px;">
+        <button
+          type="button"
+          class={testRunning ? "red-bg" : ""}
+          on:click={() => {
+            testRunning = false;
+            modalContent = [];
+            setModal(false);
+          }}>{testRunning ? "Cancel" : "Ok"}</button
+        >
+      </div>
+    </div>
   {/if}
 </div>
