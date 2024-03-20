@@ -35,6 +35,7 @@
     }
 
     async function handleFileUpload() {
+        hidden = true;
         console.log("Inside handleButton");
         console.log("selectedFile:", selectedFile);
         if (!selectedFile) return;
