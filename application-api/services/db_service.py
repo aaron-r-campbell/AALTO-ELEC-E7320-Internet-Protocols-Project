@@ -165,7 +165,7 @@ async def get_messages_by_room(
     async with db.transaction():
         if not await room_exists(db=db, room_id=room_id):
             raise Exception(f"Room with id {room_id} does not exist.")
-        query = "SELECT sender as sender, content, timestamp FROM messages WHERE room_id = :room_id ORDER BY timestamp DESC LIMIT 50 OFFSET :offset"  # noqa
+        query = "SELECT sender as sender, content, timestamp FROM messages WHERE room_id = :room_id ORDER BY timestamp ASC LIMIT 50 OFFSET :offset"  # noqa
         values = {"room_id": room_id, "offset": offset}
         response = await db.fetch_all(query=query, values=values)
         return [{**row, "timestamp": row["timestamp"].isoformat()} for row in response]
