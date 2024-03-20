@@ -62,7 +62,7 @@
     Download test
   </button>
   {#if throughputMbps !== null}
-    <p>Download throughput estimate: {throughputMbps} Kbps</p>
+    <p>Download throughput estimate: {throughputMbps} Mbps</p>
   {:else}
     <p>No download throughput estimate available</p>
   {/if}

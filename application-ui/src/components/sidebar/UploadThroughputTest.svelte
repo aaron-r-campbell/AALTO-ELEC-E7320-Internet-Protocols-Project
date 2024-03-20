@@ -62,7 +62,7 @@
     Upload test
   </button>
   {#if throughputMbps !== null}
-    <p>Upload throughput estimate: {throughputMbps} Kbps</p>
+    <p>Upload throughput estimate: {throughputMbps} Mbps</p>
   {:else}
     <p>No upload throughput estimate available</p>
   {/if}
