@@ -517,17 +517,10 @@ async def update_document(sid, file_id, operation_type, char, position):
         if file_id not in file_content_list:
             raise Exception("File doesn't exist in memory for some reason")
         
-<<<<<<< Updated upstream
-        if operation_type == "INSERT":
-            file_content_list[file_id].append(DocumentItem(value=char, position=position))
-        elif operation_type == "DELETE":
-            file_content_list[file_id] = [item for item in file_content_list[file_id] if item.position != position]
-=======
         if operation_type == "insertText":
-            files[file_id].append(DocumentItem(value=char, position=position))
+            file_content_list[file_id].append(DocumentItem(value=char, position=position))
         elif operation_type == "deleteContentBackward":
-            files[file_id] = [item for item in files[file_id] if item.position != position]
->>>>>>> Stashed changes
+            file_content_list[file_id] = [item for item in file_content_list[file_id] if item.position != position]
         else:
             print(f"invalid operation: {operation_type}")
             return
