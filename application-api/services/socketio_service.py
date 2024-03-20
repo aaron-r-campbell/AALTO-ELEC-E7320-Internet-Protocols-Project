@@ -467,21 +467,20 @@ async def join_file_edit(sid, file_id):
         username = session["username"]
 
         file = await get_file(db, file_id)
-        print(file)
         room_id = file["room_id"]
 
         await check_user_exists_in_room(sid, "join_file_edit_response", username, room_id)
 
         await sio.enter_room(sid=sid, room=file_id)
-        file_id = file["id"]
-        print(f"GYEHA FILE ID: {file_id}")
-        if files[file_id] is None:
+        if not file_id in files:
             files[file_id] = []
+
         response = {
             "successful": True,
             "Description": f"Joined the document editing successfully to id: {file_id}",
             "data": files[file_id],
         }
+        
         await sio.emit("join_file_edit_response", room=sid, data=response)
     except Exception as e:
         print(f"Exception occurred while joining the room for document editing: {e}")
