@@ -8,3 +8,6 @@ class DocumentItem:
 
     def to_json(self):
         return json.dumps({"value": self.value, "position": self.position})
+    
+    def to_dict(self):
+        return {"value": self.value, "position": self.position}

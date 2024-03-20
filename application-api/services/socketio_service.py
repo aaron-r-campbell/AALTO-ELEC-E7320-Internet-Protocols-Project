@@ -484,11 +484,17 @@ async def join_file_edit(sid, file_id):
         if not file_id in file_content_list:
             file_content_list[file_id] = []
 
+        # print("file_content_list[file_id]:", file_content_list[file_id])
+        # print("file_content_list[file_id][0]:", file_content_list[file_id][0])
+        # print("file_content_list[file_id][0]:", file_content_list[file_id][0].to_dict())
+
         response = {
             "successful": True,
             "Description": f"Joined the document editing successfully to id: {file_id}",
-            "data": file_content_list[file_id],
+            "data": [character.to_dict() for character in file_content_list[file_id]],
         }
+
+        # print("Here2")
         
         await sio.emit("join_file_edit_response", room=sid, data=response)
 

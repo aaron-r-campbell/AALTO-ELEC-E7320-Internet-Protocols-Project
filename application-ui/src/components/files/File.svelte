@@ -35,8 +35,8 @@
             }
         } else {
             // Insertion logic
-            console.log("HELO")
-            console.log(crdtArray)
+            console.log("HELO");
+            console.log(crdtArray);
             let newPosition;
             if (crdtArray.length === 0) {
                 // If the CRDT array is empty, the new character should start with position 1
@@ -46,7 +46,7 @@
                 newPosition = crdtArray[0].position / 2;
             } else if (crdtIndex === crdtArray.length) {
                 // Insertion at the end of the text
-                console.log(crdtArray[crdtArray.length - 1])
+                console.log(crdtArray[crdtArray.length - 1]);
                 newPosition = crdtArray[crdtArray.length - 1].position + 1;
             } else {
                 // Insertion between characters
@@ -68,15 +68,21 @@
     }
 
     const getFileContents = async () => {
+        console.log("Getting file contents");
         return new Promise((resolve, reject) => {
+            console.log("Emitting join_file_edit");
             $state.socket.emit("join_file_edit", selectedFileId);
 
             // Stop getting updates from other files
             $state.socket.off("join_file_edit_response");
 
             $state.socket.on("join_file_edit_response", (data) => {
+                console.log("GOT join_file_edit_response", data);
                 if (data?.successful) {
-                    console.log(`User has joined to edit the file: ${selectedFileId}`);
+                    // console.log("Here is the data:", data);
+                    console.log(
+                        `User has joined to edit the file: ${selectedFileId}`,
+                    );
                     resolve(data.data);
                 } else {
                     console.error(
@@ -87,10 +93,10 @@
                 }
             });
         });
-
     };
 
     const fetchFileContents = async () => {
+        console.log("Fetching file contents");
         try {
             if (selectedFileId === null) {
                 console.log("Null user. Waiting for update");
@@ -98,20 +104,28 @@
             }
             // Initially get all messages
             crdtArray = await getFileContents();
+            console.log("THIS IS THE CRDT ARRAY:", crdtArray);
             // Then start listening to the instant messages
             $state.socket.off("update_file_response");
 
             $state.socket.on("update_file_response", (response) => {
-                console.log(`update_file_response, char: {response.data.char} position: {response.data.position}`)
+                console.log(
+                    `update_file_response, char: {response.data.char} position: {response.data.position}`,
+                );
                 if (response.data.file_id !== selectedFileId) {
+                    console.log("Here1");
                     console.log("Not in currently selected file");
-                    console.log(`data.file_id = ${response.data.file_id}`)
-                    console.log(`selelcted file id = ${selectedFileId}`)
+                    console.log(`data.file_id = ${response.data.file_id}`);
+                    console.log(`selelcted file id = ${selectedFileId}`);
                 }
                 if (response?.successful) {
+                    console.log("Here2");
                     crdtArray = [
                         ...crdtArray,
-                        { char: response.data.char, position: response.data.position },
+                        {
+                            char: response.data.char,
+                            position: response.data.position,
+                        },
                     ];
                     content = crdtArray
                         .sort((a, b) => a.position - b.position)
@@ -130,9 +144,7 @@
         }
     };
 
-    onMount(() => {
-
-    })
+    onMount(() => {});
 
     $: selectedFileId, fetchFileContents();
 </script>

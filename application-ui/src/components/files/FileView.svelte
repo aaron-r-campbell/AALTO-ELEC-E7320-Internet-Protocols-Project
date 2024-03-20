@@ -34,8 +34,11 @@
     {#if selectedRoom !== null}
         <ul>
             {#each files as file}
-                <button on:click={() => (selectedFileId = file.id)}
-                    >{file.name}</button
+                <button
+                    on:click={() => {
+                        selectedFileId = file.id;
+                        console.log("Clicked", selectedFileId);
+                    }}>{file.name}</button
                 >
             {/each}
         </ul>
