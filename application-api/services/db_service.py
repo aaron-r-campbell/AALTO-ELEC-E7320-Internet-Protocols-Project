@@ -188,8 +188,8 @@ async def get_files(db: Database, room_id: int):
     query = "SELECT name, id FROM files WHERE room_id = :room_id ORDER BY name DESC"  # noqa
     values = {"room_id": room_id}
 
-    files = await db.fetch_all(query=query, values=values)
-    return [dict(f) for f in files]
+    response = await db.fetch_all(query=query, values=values)
+    return [dict(file) for file in response]
 
 
 async def file_exists(db: Database, file_id: str) -> bool:
@@ -207,7 +207,7 @@ async def update_file(db: Database, file_id: str, content: str):
 
 async def get_file(db: Database, file_id: str) -> Dict:
     async with db.transaction():
-        if not file_exists(db=db, file_id=file_id):
+        if not await file_exists(db=db, file_id=file_id):
             raise Exception(f"File with id {file_id} does not exist.")
         query = "SELECT * FROM files WHERE id = :file_id;"
         values = {"file_id": file_id}
