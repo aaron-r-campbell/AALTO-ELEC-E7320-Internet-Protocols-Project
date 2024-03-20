@@ -75,8 +75,10 @@ async def check_user_exists_in_room(sid, event_to_emit, username, room_id):
 
 @sio.on("authenticate")
 async def authenticate(sid, token):
+    # print("IN AUTHENTICATE with token")
     username = check_jwt_token(token)
     print(f"Authenticate received session token: {token}")
+    # print(f"Authenticate found username {username}")
     if not username:
         payload = {"successful": False, "description": "Authentication failed"}
         await sio.emit("authenticate_ack", payload, to=sid)
@@ -104,6 +106,7 @@ async def authenticate(sid, token):
                 await sio.enter_room(sid, mapping["room_id"])
 
             # TODO: Add successful, description, payload as arguments, not as payload
+            # print("Emitting authentication ack")
             payload = {
                 "successful": True,
                 "description": "Authentication successful",
@@ -527,8 +530,11 @@ async def test_download(sid, _):
 async def disconnect(sid):
     print("client disconnected: " + str(sid))
     async with sio.session(sid) as session:
-        # TODO: Error if username doesn't exist
-        username = session["username"]
+        username = session.get("username", None)
+        if username == None:
+            print("Diconnecting unauthenticated user")
+            return
+
         user_sockets_mapping.pop(username)
 
         user_update_payload = {"username": username}
