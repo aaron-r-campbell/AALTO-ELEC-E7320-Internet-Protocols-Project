@@ -420,7 +420,7 @@ async def upload_document(sid, room_id, json_data, filename):
         # TODO: Error if username doesn't exist
         username = session["username"]
 
-        check_user_exists_in_room(sid, "upload_document_response", username, room_id)
+        await check_user_exists_in_room(sid, "upload_document_response", username, room_id)
 
         file_id = await create_file(db, room_id, filename)
         files[file_id] = []
@@ -467,12 +467,16 @@ async def join_file_edit(sid, file_id):
         username = session["username"]
 
         file = await get_file(db, file_id)
+        print(file)
         room_id = file["room_id"]
 
-        check_user_exists_in_room(sid, "join_file_edit_response", username, room_id)
+        await check_user_exists_in_room(sid, "join_file_edit_response", username, room_id)
 
         await sio.enter_room(sid=sid, room=file_id)
         file_id = file["id"]
+        print(f"GYEHA FILE ID: {file_id}")
+        if files[file_id] is None:
+            files[file_id] = []
         response = {
             "successful": True,
             "Description": f"Joined the document editing successfully to id: {file_id}",
@@ -497,7 +501,7 @@ async def update_document(sid, file_id, operation_type, char, position):
 
         file = await get_file(db, file_id)
         room_id = file["room_id"]
-        check_user_exists_in_room(sid, "update_file_response", username, room_id)
+        await check_user_exists_in_room(sid, "update_file_response", username, room_id)
 
         data = {
             "operation_type": operation_type,
