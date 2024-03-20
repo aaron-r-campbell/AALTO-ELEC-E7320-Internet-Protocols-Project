@@ -35,6 +35,7 @@
             }
         } else {
             // Insertion logic
+            console.log("HELO")
             console.log(crdtArray)
             let newPosition;
             if (crdtArray.length === 0) {
@@ -100,17 +101,17 @@
             // Then start listening to the instant messages
             $state.socket.off("update_file_response");
 
-            $state.socket.on("update_file_response", (data) => {
-                if (data.file_id !== selectedFileId) {
+            $state.socket.on("update_file_response", (response) => {
+                console.log(`update_file_response, char: {response.data.char} position: {response.data.position}`)
+                if (response.data.file_id !== selectedFileId) {
                     console.log("Not in currently selected file");
-                    console.log(`data.file_id = ${data.file_id}`)
+                    console.log(`data.file_id = ${response.data.file_id}`)
                     console.log(`selelcted file id = ${selectedFileId}`)
                 }
-                console.log(`update_file_response ${data}`)
-                if (data?.successful) {
+                if (response?.successful) {
                     crdtArray = [
                         ...crdtArray,
-                        { char: data.char, position: data.position },
+                        { char: response.data.char, position: response.data.position },
                     ];
                     content = crdtArray
                         .sort((a, b) => a.position - b.position)
@@ -119,9 +120,9 @@
                 } else {
                     console.error(
                         "Error in fetching file update:",
-                        data?.description,
+                        response?.description,
                     );
-                    throw new Error(data?.description);
+                    throw new Error(response?.description);
                 }
             });
         } catch (error) {
