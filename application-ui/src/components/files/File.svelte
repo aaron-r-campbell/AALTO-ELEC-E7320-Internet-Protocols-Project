@@ -1,10 +1,11 @@
 <script>
-    import FileUpload from "/app/src/components/files/FileUpload.svelte";
+    import FileUpload from "../../components/files/FileUpload.svelte";
     import { onMount } from "svelte";
     import { state } from "../../stores/state_store.js";
 
     export let selectedFileId;
-    let textarea, content,
+    let textarea,
+        content,
         crdtArray = [];
 
     function handleEdit(event) {
@@ -107,8 +108,8 @@
                     ];
                     content = crdtArray
                         .sort((a, b) => a.position - b.position)
-                        .map(obj => obj.char)
-                        .join('');
+                        .map((obj) => obj.char)
+                        .join("");
                 } else {
                     console.error(
                         "Error in fetching file update:",
