@@ -189,7 +189,7 @@ async def get_files(db: Database, room_id: int):
     values = {"room_id": room_id}
 
     files = await db.fetch_all(query=query, values=values)
-    return files
+    return [dict(f) for f in files]
 
 
 async def file_exists(db: Database, file_id: str) -> bool:

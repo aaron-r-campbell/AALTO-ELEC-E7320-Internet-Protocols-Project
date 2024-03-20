@@ -2,13 +2,13 @@
     import { onMount } from "svelte";
     import { state } from "../../stores/state_store.js";
 
-    export let selectedRoomID;
-    let hidden;
+    export let selectedRoom;
+    let hidden = true;
 
-    onMount(() => {
-        hidden = true;
-        console.log(hidden);
-    });
+    // onMount(() => {
+    //     hidden = true;
+    //     console.log(hidden);
+    // });
 
     async function handleFileChange(event) {
         const file = event.target.files[0];
@@ -22,7 +22,7 @@
             });
             $state.socket.emit(
                 "upload_document",
-                selectedRoomID,
+                selectedRoom.id,
                 crdtArray,
                 file,
             );
@@ -40,7 +40,7 @@
     }
 </script>
 
-<div>
+{#if !hidden}
     <div class="model" class:hidden>
         <div class="content">
             <button
@@ -70,7 +70,7 @@
             >
         </div>
     </div>
-</div>
+{/if}
 <button class="bottom-right-button" on:click={() => (hidden = false)}
     >Upload</button
 >
