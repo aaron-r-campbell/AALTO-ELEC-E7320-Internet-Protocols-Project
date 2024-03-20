@@ -51,7 +51,7 @@
 
 <h2>User Statuses</h2>
 <div
-  style="display: flex; gap: 8px; flex-wrap: wrap; overflow: hidden auto; color: var(--text-color); max-height: 400px;"
+  style="display: flex; gap: 8px; flex-wrap: wrap; overflow: hidden auto; color: var(--text-color); max-height: 15%;"
 >
   {#each users as user}
     <div
