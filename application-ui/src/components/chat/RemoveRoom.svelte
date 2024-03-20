@@ -1,12 +1,12 @@
 <script>
-  import { state } from "../stores/state_store.js";
+  import { state } from "/app/src/stores/state_store.js";
 
-  export let selectedRoomID;
+  export let selectedRoom;
 
   function removeRoom(event) {
     event.preventDefault();
 
-    $state.socket.emit("remove_room", selectedRoomID);
+    $state.socket.emit("remove_room", selectedRoom.room_id);
     // The response logic is handled in ChatSelector.svelte on "remove_room_response"
   }
 </script>

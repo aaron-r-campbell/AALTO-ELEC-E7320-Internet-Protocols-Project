@@ -1,7 +1,7 @@
 <script>
-    import FileUpload from "./FileUpload.svelte";
+    import FileUpload from "/app/src/components/files/FileUpload.svelte";
 
-    export let selectedRoomID, user;
+    export let selectedRoom, user;
     let editableDiv;
 
     let objects = [];
@@ -56,7 +56,7 @@
 </script>
 
 <div id="file">
-    {#if selectedRoomID !== null}
+    {#if selectedRoom.room_id !== null}
         <div
             bind:this={editableDiv}
             contenteditable="true"

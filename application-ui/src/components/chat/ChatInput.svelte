@@ -1,8 +1,8 @@
 <script>
-  import { state } from "../stores/state_store.js";
+  import { state } from "/app/src/stores/state_store.js";
 
   export let user = null;
-  export let selectedRoomID = null;
+  export let selectedRoom = null;
 
   let message = "";
 
@@ -16,9 +16,9 @@
   function sendMessage() {
     console.log("Message sent:", message);
     console.log("user:", user);
-    console.log("roomid:", selectedRoomID);
+    console.log("roomid:", selectedRoom.room_id);
 
-    $state.socket.emit("send_msg", message, selectedRoomID);
+    $state.socket.emit("send_msg", message, selectedRoom.room_id);
 
     message = "";
   }

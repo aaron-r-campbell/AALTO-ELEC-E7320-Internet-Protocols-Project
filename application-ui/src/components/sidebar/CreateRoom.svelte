@@ -1,5 +1,5 @@
 <script>
-  import { state } from "../stores/state_store.js";
+  import { state } from "/app/src/stores/state_store.js";
 
   let roomName = "";
 

@@ -1,8 +1,8 @@
 <script>
   import { onMount, onDestroy } from "svelte";
-  import { state } from "../stores/state_store.js";
+  import { state } from "/app/src/stores/state_store.js";
 
-  export let selectedRoomID;
+  export let selectedRoom;
 
   let users_not_in_room = [];
 
@@ -27,12 +27,12 @@
   });
 
   const getUsersNotInRoom = async () => {
-    $state.socket.emit("get_users_not_in_room", selectedRoomID);
+    $state.socket.emit("get_users_not_in_room", selectedRoom.room_id);
   };
 
-  // Runs every time selectedRoomID changes AFAIK
+  // Runs every time selectedRoom.room_id changes AFAIK
   $: {
-    selectedRoomID, getUsersNotInRoom();
+    selectedRoom.room_id, getUsersNotInRoom();
   }
 
   let selectedUser = "";
@@ -40,13 +40,13 @@
   function handleSubmit(event) {
     event.preventDefault();
     console.log("Inviting user", selectedUser, "to chatroom");
-    $state.socket.emit("add_to_room", selectedRoomID, selectedUser);
+    $state.socket.emit("add_to_room", selectedRoom.room_id, selectedUser);
 
     $state.socket.once("add_to_room_response", (payload) => {
       if (payload.successful) {
         console.log("User added to room successfully");
         // Refetch the list
-        $state.socket.emit("get_users_not_in_room", selectedRoomID);
+        $state.socket.emit("get_users_not_in_room", selectedRoom.room_id);
       } else {
         console.error("Got error:", payload.description);
       }

@@ -9,9 +9,6 @@
 	<slot />
 </body>
 
-<style>
-	body {
-		height: 100vh;
-		margin: 0;
-	}
+<style global>
+	@import "/app/public/style.css";
 </style>
