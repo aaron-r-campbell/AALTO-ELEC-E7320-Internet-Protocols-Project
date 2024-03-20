@@ -10,33 +10,55 @@
     //     console.log(hidden);
     // });
 
+    let selectedFile = null;
+    let fileContents = null;
+
     async function handleFileChange(event) {
+        console.log("In handleFileChange");
         const file = event.target.files[0];
+        console.log("FILE:", file);
         if (!file) return;
+        selectedFile = file;
 
         const reader = new FileReader();
+
         reader.onload = () => {
-            const charlist = reader.result.split("");
-            const crdtArray = charlist.map((char, index) => {
-                return { value: char, position: index + 1.0 };
-            });
-            $state.socket.emit(
-                "upload_document",
-                selectedRoom.id,
-                crdtArray,
-                file,
-            );
-            $state.socket.on("fetch_room_files_response", () => {
-                if (payload.successful) {
-                    console.log("Upload file successful");
-                } else {
-                    console.error("Upload file unsuccessful");
-                }
-            });
+            fileContents = reader.result;
+            console.log("In onload", fileContents);
         };
         reader.onerror = () => {
             console.log(reader.error);
         };
+
+        reader.readAsText(selectedFile);
+    }
+
+    async function handleButton() {
+        console.log("Inside handleButton");
+        console.log("selectedFile:", selectedFile);
+        if (!selectedFile) return;
+
+        const charlist = fileContents.split("");
+        console.log("Getting charlist:", charlist);
+
+        const crdtArray = charlist.map((char, index) => {
+            return { value: char, position: index + 1.0 };
+        });
+        console.log("This is the charlist", charlist);
+        console.log("This is the crdtArray", crdtArray);
+        $state.socket.emit(
+            "upload_document",
+            selectedRoom.room_id,
+            crdtArray,
+            selectedFile.name,
+        );
+        $state.socket.on("fetch_room_files_response", () => {
+            if (payload.successful) {
+                console.log("Upload file successful");
+            } else {
+                console.error("Upload file unsuccessful");
+            }
+        });
     }
 </script>
 
@@ -65,7 +87,8 @@
                 type="submit"
                 on:click={() => {
                     hidden = true;
-                    console.log("button clicked");
+                    console.log("Submit pressed");
+                    handleButton();
                 }}>Submit</button
             >
         </div>

@@ -420,7 +420,7 @@ async def upload_document(sid, room_id, json_data, filename):
         # TODO: Error if username doesn't exist
         username = session["username"]
 
-        check_user_exists_in_room(sid, "upload_document_response", username, room_id)
+        await check_user_exists_in_room(sid, "upload_document_response", username, room_id)
 
         file_id = await create_file(db, room_id, filename)
         files[file_id] = []
