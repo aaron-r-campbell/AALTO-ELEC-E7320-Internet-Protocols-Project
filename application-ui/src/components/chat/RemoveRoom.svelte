@@ -11,4 +11,4 @@
   }
 </script>
 
-<button on:click={removeRoom}>Remove room</button>
+<button class="red-bg" on:click={removeRoom}>Remove room</button>

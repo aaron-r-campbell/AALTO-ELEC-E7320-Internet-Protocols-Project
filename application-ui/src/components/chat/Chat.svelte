@@ -1,13 +1,10 @@
 <script>
     import { state } from "/app/src/stores/state_store.js";
-    import { onMount } from "svelte";
 
     import Message from "/app/src/components/chat/Message.svelte";
-    import InviteUsers from "/app/src/components/chat/InviteUsers.svelte";
-    import RemoveRoom from "/app/src/components/chat/RemoveRoom.svelte";
 
-    export let user = {};
-    export let selectedRoom = null;
+    export let user = {},
+        selectedRoom = null;
 
     let messages = [];
 
@@ -67,7 +64,6 @@
 
                     messages = [...messages, new_message];
                     console.log("Current messages:", messages);
-                    // scrollToBottom(element);
                 } else {
                     console.error(
                         "Error in fetching room messages:",
@@ -81,18 +77,17 @@
         }
     };
 
-    $: selectedRoom.room_id, fetchMessages();
+    $: {
+        if (selectedRoom && selectedRoom.room_id !== null) {
+            fetchMessages();
+        }
+    }
 </script>
 
-<h1>{selectedRoom.room_name}</h1>
-<div>
-    <InviteUsers {selectedRoom} />
-</div>
-<div>
-    <RemoveRoom {selectedRoom} />
-</div>
-<div>
-    {#each messages as message}
+<div
+    style="flex: 1; display: flex; flex-direction: column-reverse; gap: 16px; overflow-y: scroll; padding: 16px"
+>
+    {#each messages.slice().reverse() as message}
         <Message
             bind:current_user={user.username}
             bind:sender={message.sender}

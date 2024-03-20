@@ -60,4 +60,4 @@
     updateTimestamp();
 </script>
 
-<p>{formattedTimestamp}</p>
+{formattedTimestamp}

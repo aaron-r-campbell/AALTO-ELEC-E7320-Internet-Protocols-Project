@@ -51,15 +51,15 @@
 
 <h2>Users</h2>
 <div style="display: flex; flex-direction: column; gap: 8px;">
-    {#each users as user}
-      <span>
-        {user.username}
+  {#each users as user}
+    <span>
+      {user.username}
 
-        {#if user.latency}
-          is online with latency {user.latency || "..."} ms
-        {:else}
-          is offline
-        {/if}
-      </span>
-    {/each}
+      {#if user.latency}
+        is online with latency {user.latency || "..."} ms
+      {:else}
+        is offline
+      {/if}
+    </span>
+  {/each}
 </div>

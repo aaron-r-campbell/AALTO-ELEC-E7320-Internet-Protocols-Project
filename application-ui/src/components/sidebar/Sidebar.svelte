@@ -9,7 +9,7 @@
 
 <div id="sidebar">
     <UserInfo />
-    <div class="flex-grow">
+    <div style="flex-grow: 1;">
         <ChatSelector {handleRoomSelection} {selectedRoom} />
     </div>
     <PeerInfo />
@@ -18,15 +18,12 @@
 
 <style>
     #sidebar {
+        width: 340px;
         background-color: #2d2d2d;
         color: #fff;
         display: flex;
         flex-direction: column;
         padding: 16px;
-    }
-
-    .flex-grow {
-        flex-grow: 1;
-        justify-content: flex-start;
+        height: 100%;
     }
 </style>

@@ -5,12 +5,14 @@
 
     const navOptions = [
         { page: "messages", component: "ChatRoom" },
-        { page: "file", component: "File" },
+        { page: "files", component: "File" },
     ];
 
-    let selectedComponent = "ChatRoom";
-    let user = {};
-    let selectedRoom = null;
+    let selectedComponent = "ChatRoom",
+        user = {},
+        selectedRoom = null,
+        hideSidebar = true;
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
     function handleRoomSelection(room) {
         console.log("CHANGING TO ROOM", room);
@@ -23,16 +25,14 @@
     }
 </script>
 
-<Sidebar {handleRoomSelection} {selectedRoom} />
+<Sidebar {handleRoomSelection} {selectedRoom} {isMobile} />
 <div id="page">
     <div class="navbar">
         {#each navOptions as option, i}
             <button
                 class={option.component === selectedComponent ? "" : "inactive"}
-                on:click={() => {
-                    console.log("CHANGING TO VIEW", option.component);
-                    selectedComponent = option.component;
-                }}>{option.page}</button
+                on:click={() => changeComponent(option.component)}
+                >{option.page}</button
             >
         {/each}
     </div>
@@ -60,8 +60,12 @@
     }
 
     #page-content {
+        height: 95%;
         margin-top: 10px;
-        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background-color: var(--background-color);
     }
 
     .navbar {

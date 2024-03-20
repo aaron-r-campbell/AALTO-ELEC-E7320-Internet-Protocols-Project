@@ -1,4 +1,3 @@
-
 :root {
     --primary-blue: #2196f3;
     --primary-hover-blue: #0b7dda;
@@ -72,6 +71,18 @@ button {
     box-sizing: border-box;
 }
 
+select {
+    padding: 10px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 16px;
+    background-color: var(--card-background-color);
+    color: var(--text-color);
+    cursor: pointer;
+}
+
 .fw {
     width: 100%;
     max-width: 100%;
@@ -80,4 +91,25 @@ button {
 
 button:hover {
     background-color: var(--primary-hover-blue);
+}
+
+.red-bg {
+    background-color: var(--primary-red);
+}
+
+.red-bg:hover {
+    background-color: var(--primary-hover-red);
+}
+
+.centerModal {
+    position: fixed;
+    top: 50%;
+    left: calc(50% + 170px);
+    transform: translate(-50%, -50%);
+}
+
+@media only screen and (max-width: 768px) {
+    .centerModal {
+        left: 50%;
+    }
 }
