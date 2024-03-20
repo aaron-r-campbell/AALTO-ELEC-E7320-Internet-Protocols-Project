@@ -443,6 +443,9 @@ async def upload_document(sid, room_id, json_data, filename):
 @sio.on("get_room_files")
 async def get_room_files(sid, room_id):
     print("get_room_files sid:", sid)
+    print("get_room files with room di", room_id)
+    room_id = int(room_id)
+    
     async with sio.session(sid) as session:
         # TODO: Error if username doesn't exist
         username = session["username"]

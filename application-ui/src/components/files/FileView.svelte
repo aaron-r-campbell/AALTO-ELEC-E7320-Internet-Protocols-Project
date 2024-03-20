@@ -4,13 +4,16 @@
     import File from "./File.svelte";
     import FileUpload from "./FileUpload.svelte";
 
-    export let user, selectedRoomID;
+    export let user, selectedRoom;
     let files = [],
         selectedFileId;
 
+    let selectedRoomID = selectedRoom.room_id
+    
     onMount(() => {
-        $state.socket.emit("fetch_room_files");
-        $state.socket.on("fetch_room_files_response", (payload) => {
+
+        $state.socket.emit("get_room_files", selectedRoomID);
+        $state.socket.on("return_room_files", (payload) => {
             if (payload.successful) {
                 console.log("GOT ROOM FILES:", payload.files);
                 files = payload.files;

@@ -1,11 +1,11 @@
 <script>
-    import Sidebar from "/app/src/components/sidebar/Sidebar.svelte";
-    import ChatRoom from "/app/src/components/chat/ChatRoom.svelte";
-    import File from "/app/src/components/files/File.svelte";
+    import Sidebar from "../components/sidebar/Sidebar.svelte";
+    import ChatRoom from "../components/chat/ChatRoom.svelte";
+    import FileView from "../components/files/FileView.svelte";
 
     const navOptions = [
         { page: "messages", component: "ChatRoom" },
-        { page: "files", component: "File" },
+        { page: "files", component: "FileView" },
     ];
 
     let selectedComponent = "ChatRoom",
@@ -45,8 +45,8 @@
             </div>
         {:else if selectedComponent === "ChatRoom"}
             <ChatRoom {user} {selectedRoom} />
-        {:else if selectedComponent === "File"}
-            <File {user} {selectedRoom} />
+        {:else if selectedComponent === "FileView"}
+            <FileView {user} selectedRoom={selectedRoom} />
         {/if}
     </div>
 </div>
