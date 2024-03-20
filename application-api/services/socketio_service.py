@@ -501,7 +501,7 @@ async def join_file_edit(sid, file_id):
 async def update_document(sid, file_id, operation_type, char, position):
     try:
         print(f"update_document has been called to {file_id}")
-        print(files[file_id])
+        print(file_content_list[file_id])
         file_id = int(file_id)
 
         # Get the user name from the session
@@ -524,7 +524,6 @@ async def update_document(sid, file_id, operation_type, char, position):
         else:
             print(f"invalid operation: {operation_type}")
             return
-
         data = {
             "operation_type": operation_type,
             "file_id": file_id,
