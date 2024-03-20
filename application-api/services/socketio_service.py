@@ -496,11 +496,12 @@ async def join_file_edit(sid, file_id):
         print(f"Exception occurred while joining the room for document editing: {e}")
 
 
-#operation_type could be "INSERT" or "DELTE"
+#operation_type could be "insertText" or "deleteContentBackward"
 @sio.on("update_file")
 async def update_document(sid, file_id, operation_type, char, position):
     try:
-        print("update_document has been called")
+        print(f"update_document has been called to {file_id}")
+        print(files[file_id])
         file_id = int(file_id)
 
         # Get the user name from the session
@@ -516,9 +517,9 @@ async def update_document(sid, file_id, operation_type, char, position):
         if file_id not in file_content_list:
             raise Exception("File doesn't exist in memory for some reason")
         
-        if operation_type == "INSERT":
+        if operation_type == "insertText":
             file_content_list[file_id].append(DocumentItem(value=char, position=position))
-        elif operation_type == "DELETE":
+        elif operation_type == "deleteContentBackward":
             file_content_list[file_id] = [item for item in file_content_list[file_id] if item.position != position]
         else:
             print(f"invalid operation: {operation_type}")
@@ -530,9 +531,10 @@ async def update_document(sid, file_id, operation_type, char, position):
             "char": char,
             "position": position,
         }
+        print(f"successful uppdate file to file: {data}")
 
         response = {"successful": True, "description": "", "data": data}
-        await sio.emit("update_document_response", room=file_id, data=response)
+        await sio.emit("update_file_response", room=file_id, data=response)
 
     except Exception as e:
         print(f"error while updating document: {e}")
