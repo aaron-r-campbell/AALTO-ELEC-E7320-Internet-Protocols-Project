@@ -1,70 +1,92 @@
 <script>
   import axios from "axios";
 
-  let throughputMbps = null;
-  let sizeKB = 1024; // Default size: 1 MB
-  let isDisabled = false;
+  let modalContent = [],
+    testRunning = false,
+    modalVisible = false;
 
-  // Function to initiate the download request
   const downloadTest = async () => {
-    try {
-      let delay_milliseconds = 0;
+    let sizeMB = 1,
+      totalSizeMB = 0,
+      totalDurationMilliseconds = 0;
 
-      // Iteratively increase delay until test lasts longer than 10 seconds
-      while (delay_milliseconds < 5000) {
-        console.log("Previous delay:", delay_milliseconds);
-        const url = `/api/throughput_download?size_kb=${sizeKB}`;
+    setModal(true);
+    testRunning = true;
 
-        const start = Date.now();
+    while (testRunning && sizeMB <= 1024) {
+      const start = Date.now();
 
-        await axios.get(url, {
+      try {
+        await axios.get(`/api/throughput_download?size_kb=${sizeMB * 1024}`, {
           responseType: "blob",
           timeout: 30000,
         });
-
-        const end = Date.now();
-
-        delay_milliseconds = end - start;
-
-        // Maybe looks nicer when the value updates during the test
-        if (delay_milliseconds > 0) {
-          throughputMbps = Math.trunc(
-            (8 * sizeKB) / (delay_milliseconds / 1000) / 1024,
-          );
-        }
-
-        sizeKB = sizeKB * 2;
+      } catch (error) {
+        console.error("Error downloading file:", error);
+        modalContent = [
+          ...modalContent,
+          "Error downloading file. Please try again.",
+        ];
+        break;
       }
 
-      // Reset the sizeKB for future tests
-      sizeKB = 1024;
+      const end = Date.now();
+      const durationMilliseconds = end - start;
 
-      // Save the response data into a variable
-    } catch (error) {
-      console.error("Error downloading file:", error);
-      return null; // Return null in case of error
+      modalContent = [
+        ...modalContent,
+        `Downloaded ${sizeMB} MB file in ${durationMilliseconds} ms`,
+      ];
+
+      if (durationMilliseconds > 0) {
+        totalSizeMB += sizeMB;
+        totalDurationMilliseconds += durationMilliseconds;
+      }
+
+      if (durationMilliseconds >= 5000) break;
+
+      sizeMB *= 2;
     }
+
+    modalContent = [
+      ...modalContent,
+      `Download throughput estimate: ${Math.trunc(8000 * (totalSizeMB / totalDurationMilliseconds))} Mbps`,
+    ];
+
+    testRunning = false;
   };
 
-  const handleSubmit = async () => {
-    isDisabled = true;
-    await downloadTest();
-    isDisabled = false;
-  };
+  function setModal(visible) {
+    modalVisible = visible;
+  }
 </script>
 
 <div>
   <button
-    on:click={handleSubmit}
-    disabled={isDisabled}
+    on:click={downloadTest}
+    disabled={testRunning}
     class="fw"
-    style={isDisabled ? "background-color: grey; cursor: not-allowed;" : ""}
+    style={testRunning ? "background-color: grey; cursor: not-allowed; width: 50%;" : "width: 50%;"}
   >
-    Download test
+    Download Test
   </button>
-  {#if throughputMbps !== null}
-    <p>Download throughput estimate: {throughputMbps} Mbps</p>
-  {:else}
-    <p>No download throughput estimate available</p>
+  {#if modalVisible}
+    <div class="centerModal card" style="color: var(--text-color);">
+      <h2>Download Test</h2>
+      {#each modalContent as element}
+        <p>{element}</p>
+      {/each}
+      <div style="display:flex; justify-content: flex-end; gap: 16px;">
+        <button
+          type="button"
+          class={testRunning ? "red-bg" : ""}
+          on:click={() => {
+            testRunning = false;
+            modalContent = [];
+            setModal(false);
+          }}>{testRunning ? "Cancel" : "Ok"}</button
+        >
+      </div>
+    </div>
   {/if}
 </div>

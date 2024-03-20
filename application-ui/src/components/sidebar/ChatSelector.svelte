@@ -77,6 +77,8 @@
         flex-direction: column;
         gap: 16px;
         list-style: none;
+        flex-grow: 1;
+        overflow-y: auto;
     }
 
     #chats-list button {

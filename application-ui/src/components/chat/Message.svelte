@@ -18,7 +18,7 @@
 <style>
     .own-message {
         align-self: flex-end;
-        background-color: #4caf50;
+        background-color: var(--primary-green);
         color: white;
     }
 

@@ -9,9 +9,7 @@
 
 <div id="sidebar">
     <UserInfo />
-    <div style="flex-grow: 1;">
-        <ChatSelector {handleRoomSelection} {selectedRoom} />
-    </div>
+    <ChatSelector {handleRoomSelection} {selectedRoom} />
     <PeerInfo />
     <ThroughputTests />
 </div>
@@ -23,7 +21,8 @@
         color: #fff;
         display: flex;
         flex-direction: column;
+        justify-content: space-evenly;
+        height: calc(100% - 32px);
         padding: 16px;
-        height: 100%;
     }
 </style>

@@ -4,5 +4,7 @@
 </script>
 
 <h2>Utilities</h2>
-<DownThroughputTest />
-<UploadThroughputTest />
+<div style="display: flex; gap: 8px; margin-bottom: 16px">
+    <DownThroughputTest />
+    <UploadThroughputTest />
+</div>
