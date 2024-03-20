@@ -451,17 +451,6 @@ async def get_room_files(sid, room_id):
         await sio.emit("return_room_files", payload, to=sid)
 
 
-# @sio.on("get_room_files")
-# async def get_room_files(sid, room_id):
-#     print("get_room_files sid:", sid)
-#     async with sio.session(sid) as session:
-#         # TODO: Error if username doesn't exist
-#         username = session["username"]
-#         files = await get_files(db=db, room_id=room_id)
-#         payload = {"successful": True, "description": "", "files": files}
-#         await sio.emit("return_room_files", payload, to=sid)
-
-
 @sio.on("join_file_edit")
 async def join_file_edit(sid, file_id):
     try:
