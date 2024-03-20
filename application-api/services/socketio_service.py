@@ -482,10 +482,12 @@ async def join_file_edit(sid, file_id):
         }
         
         await sio.emit("join_file_edit_response", room=sid, data=response)
+
     except Exception as e:
         print(f"Exception occurred while joining the room for document editing: {e}")
 
 
+#operation_type could be "INSERT" or "DELTE"
 @sio.on("update_file")
 async def update_document(sid, file_id, operation_type, char, position):
     try:
@@ -497,10 +499,21 @@ async def update_document(sid, file_id, operation_type, char, position):
 
         # TODO: Error if username doesn't exist
         username = session["username"]
-
         file = await get_file(db, file_id)
+
         room_id = file["room_id"]
         await check_user_exists_in_room(sid, "update_file_response", username, room_id)
+
+        if file_id not in files:
+            raise Exception("File doesn't exist in memory for some reason")
+        
+        if operation_type == "INSERT":
+            files[file_id].append(DocumentItem(value=char, position=position))
+        elif operation_type == "DELETE":
+            files[file_id] = [item for item in files[file_id] if item.position != position]
+        else:
+            print(f"invalid operation: {operation_type}")
+            return
 
         data = {
             "operation_type": operation_type,
