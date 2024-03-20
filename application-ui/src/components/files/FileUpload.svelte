@@ -42,7 +42,7 @@
         console.log("Getting charlist:", charlist);
 
         const crdtArray = charlist.map((char, index) => {
-            return { value: char, position: index + 1.0 };
+            return { char: char, position: index + 1.0 };
         });
         console.log("This is the charlist", charlist);
         console.log("This is the crdtArray", crdtArray);

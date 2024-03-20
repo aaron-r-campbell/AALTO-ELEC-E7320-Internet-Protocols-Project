@@ -105,6 +105,13 @@
             // Initially get all messages
             crdtArray = await getFileContents();
             console.log("THIS IS THE CRDT ARRAY:", crdtArray);
+            content = crdtArray
+                .sort((a, b) => a.position - b.position)
+                .map((obj) => obj.char)
+                .join("");
+
+            console.log("content", content);
+
             // Then start listening to the instant messages
             $state.socket.off("update_file_response");
 
@@ -127,10 +134,12 @@
                             position: response.data.position,
                         },
                     ];
+                    console.log("Setting content");
                     content = crdtArray
                         .sort((a, b) => a.position - b.position)
                         .map((obj) => obj.char)
                         .join("");
+                    console.log(content);
                 } else {
                     console.error(
                         "Error in fetching file update:",

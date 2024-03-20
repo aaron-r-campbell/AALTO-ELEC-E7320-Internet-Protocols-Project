@@ -431,7 +431,7 @@ async def upload_document(sid, room_id, json_data, filename):
             print("This is the data:", json_data)
             for item in json_data:
                 # print(f'value: {item["value"]}, position: {item["position"]}')
-                document_item = DocumentItem(value=item["value"], position=item["position"])
+                document_item = DocumentItem(char=item["char"], position=item["position"])
                 file_content_list[file_id].append(document_item)
 
             # data = [item.__dict__ for item in files[file_id]]
@@ -524,7 +524,7 @@ async def update_document(sid, file_id, operation_type, char, position):
             raise Exception("File doesn't exist in memory for some reason")
         
         if operation_type == "insertText":
-            file_content_list[file_id].append(DocumentItem(value=char, position=position))
+            file_content_list[file_id].append(DocumentItem(char=char, position=position))
         elif operation_type == "deleteContentBackward":
             file_content_list[file_id] = [item for item in file_content_list[file_id] if item.position != position]
         else:
