@@ -35,6 +35,7 @@
             }
         } else {
             // Insertion logic
+            console.log(crdtArray)
             let newPosition;
             if (crdtArray.length === 0) {
                 // If the CRDT array is empty, the new character should start with position 1
@@ -44,6 +45,7 @@
                 newPosition = crdtArray[0].position / 2;
             } else if (crdtIndex === crdtArray.length) {
                 // Insertion at the end of the text
+                console.log(crdtArray[crdtArray.length - 1])
                 newPosition = crdtArray[crdtArray.length - 1].position + 1;
             } else {
                 // Insertion between characters
@@ -64,7 +66,7 @@
         console.log("Updated CRDT array:", crdtArray);
     }
 
-    const getFileContents = () => {
+    const getFileContents = async () => {
         return new Promise((resolve, reject) => {
             $state.socket.emit("join_file_edit", selectedFileId);
 
@@ -73,6 +75,7 @@
 
             $state.socket.on("join_file_edit_response", (data) => {
                 if (data?.successful) {
+                    console.log(`User has joined to edit the file: ${selectedFileId}`);
                     resolve(data.data);
                 } else {
                     console.error(
@@ -83,7 +86,9 @@
                 }
             });
         });
+
     };
+
     const fetchFileContents = async () => {
         try {
             if (selectedFileId === null) {
@@ -91,16 +96,17 @@
                 return;
             }
             // Initially get all messages
-            messages = await getFileContents();
-
+            crdtArray = await getFileContents();
             // Then start listening to the instant messages
-            $state.socket.off("update_file");
+            $state.socket.off("update_file_response");
 
-            $state.socket.on("update_file", (data) => {
+            $state.socket.on("update_file_response", (data) => {
                 if (data.file_id !== selectedFileId) {
-                    reject("Not in currently selected file");
+                    console.log("Not in currently selected file");
+                    console.log(`data.file_id = ${data.file_id}`)
+                    console.log(`selelcted file id = ${selectedFileId}`)
                 }
-
+                console.log(`update_file_response ${data}`)
                 if (data?.successful) {
                     crdtArray = [
                         ...crdtArray,
@@ -122,6 +128,10 @@
             console.error("Error fetching file data:", error);
         }
     };
+
+    onMount(() => {
+
+    })
 
     $: selectedFileId, fetchFileContents();
 </script>
