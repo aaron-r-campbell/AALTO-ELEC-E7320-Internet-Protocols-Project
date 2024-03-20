@@ -524,7 +524,6 @@ async def update_document(sid, file_id, operation_type, char, position):
         else:
             print(f"invalid operation: {operation_type}")
             return
-
         data = {
             "operation_type": operation_type,
             "file_id": file_id,
