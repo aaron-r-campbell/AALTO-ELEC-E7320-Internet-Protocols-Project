@@ -3,6 +3,7 @@
     import { state } from "../../stores/state_store.js";
     import File from "./File.svelte";
     import FileUpload from "./FileUpload.svelte";
+    // import FileDownload from "./FileDownload.svelte";
 
     export let user, selectedRoom;
     let files = [],
@@ -41,6 +42,7 @@
         {#if selectedFileId}
             <File bind:selectedFileId />
         {/if}
+        <!-- <FileDownload bind:selectedRoom /> -->
         <FileUpload bind:selectedRoom />
     {/if}
 </div>

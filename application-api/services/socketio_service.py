@@ -50,7 +50,7 @@ socket_app = socketio.ASGIApp(sio)
 # Is needed for inviting other users to a chatroom
 user_sockets_mapping: Dict[str, str] = {}
 
-files: Dict[int, List[DocumentItem]] = {}
+file_content_list: Dict[int, List[DocumentItem]] = {}
 
 
 async def scheduled_ping():
@@ -420,21 +420,30 @@ async def upload_document(sid, room_id, json_data, filename):
         # TODO: Error if username doesn't exist
         username = session["username"]
 
-        await check_user_exists_in_room(sid, "upload_document_response", username, room_id)
+        async with db.transaction():
 
-        file_id = await create_file(db, room_id, filename)
-        files[file_id] = []
+            await check_user_exists_in_room(sid, "upload_document_response", username, room_id)
 
-        data = json.loads(json_data)
-        for item in data:
-            print(f'value: {item["value"]}, position: {item["position"]}')
-            document_item = DocumentItem(value=item["value"], position=item["position"])
-            files[file_id].append(document_item)
+            file_id = await create_file(db, room_id, filename)
+            file_content_list[file_id] = []
 
-        data = [item.__dict__ for item in files[file_id]]
+            # data = json.loads(json_data)
+            print("This is the data:", json_data)
+            for item in json_data:
+                # print(f'value: {item["value"]}, position: {item["position"]}')
+                document_item = DocumentItem(value=item["value"], position=item["position"])
+                file_content_list[file_id].append(document_item)
 
-        response = {"successful": True, "data": data, "document_id": file_id}
-        await sio.emit("upload_file_response", room=room_id, data=response)
+            # data = [item.__dict__ for item in files[file_id]]
+        
+            files = await get_files(db=db, room_id=room_id)
+            payload = {"successful": True, "description": "", "files": files}
+
+            await sio.emit("return_room_files", payload, to=room_id)
+
+        # response = {"successful": True, "data": data, "document_id": file_id}
+        # Just inform others that a new file has been added
+        # await sio.emit("return_room_files", room=room_id, data=response)
 
     except Exception as e:
         print(f"Exception occurred while uploading document: {e}")
@@ -472,13 +481,13 @@ async def join_file_edit(sid, file_id):
         await check_user_exists_in_room(sid, "join_file_edit_response", username, room_id)
 
         await sio.enter_room(sid=sid, room=file_id)
-        if not file_id in files:
-            files[file_id] = []
+        if not file_id in file_content_list:
+            file_content_list[file_id] = []
 
         response = {
             "successful": True,
             "Description": f"Joined the document editing successfully to id: {file_id}",
-            "data": files[file_id],
+            "data": file_content_list[file_id],
         }
         
         await sio.emit("join_file_edit_response", room=sid, data=response)
@@ -504,13 +513,13 @@ async def update_document(sid, file_id, operation_type, char, position):
         room_id = file["room_id"]
         await check_user_exists_in_room(sid, "update_file_response", username, room_id)
 
-        if file_id not in files:
+        if file_id not in file_content_list:
             raise Exception("File doesn't exist in memory for some reason")
         
         if operation_type == "INSERT":
-            files[file_id].append(DocumentItem(value=char, position=position))
+            file_content_list[file_id].append(DocumentItem(value=char, position=position))
         elif operation_type == "DELETE":
-            files[file_id] = [item for item in files[file_id] if item.position != position]
+            file_content_list[file_id] = [item for item in file_content_list[file_id] if item.position != position]
         else:
             print(f"invalid operation: {operation_type}")
             return
