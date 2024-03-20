@@ -15,7 +15,7 @@
           console.log("data", data.data);
 
           // Accumulate file contents
-          fileContents += data.data.map((obj) => obj.value).join("");
+          fileContents += data.data.map((obj) => obj.char).join("");
 
           resolve(); // Resolve the promise once all data is received
         });
