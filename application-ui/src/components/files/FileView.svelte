@@ -3,7 +3,7 @@
     import { state } from "../../stores/state_store.js";
     import File from "./File.svelte";
     import FileUpload from "./FileUpload.svelte";
-    // import FileDownload from "./FileDownload.svelte";
+    import FileDownload from "./FileDownload.svelte";
 
     export let user, selectedRoom;
     let files = [],
@@ -34,18 +34,20 @@
     {#if selectedRoom !== null}
         <ul>
             {#each files as file}
-                <button
-                    on:click={() => {
-                        selectedFileId = file.id;
-                        console.log("Clicked", selectedFileId);
-                    }}>{file.name}</button
-                >
+                <div style="display: flex; gap: 16px;">
+                    <button
+                        on:click={() => {
+                            selectedFileId = file.id;
+                            console.log("Clicked", selectedFileId);
+                        }}>{file.name}</button
+                    >
+                    <FileDownload {file} />
+                </div>
             {/each}
         </ul>
         {#if selectedFileId}
             <File bind:selectedFileId />
         {/if}
-        <!-- <FileDownload bind:selectedRoom /> -->
         <FileUpload bind:selectedRoom />
     {/if}
 </div>
