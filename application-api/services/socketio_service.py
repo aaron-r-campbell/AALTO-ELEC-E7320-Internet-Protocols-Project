@@ -24,7 +24,7 @@ from services.db_service import (
     get_all_user_room_mappings,
     add_user_to_room,
     user_exists_in_room,
-    get_users_not_in_room,
+    get_users_not_in_room_by_id,
     get_rooms_by_user,
     # Messages
     create_message,
@@ -160,7 +160,7 @@ async def remove_room(sid, room_id):
 
 
 @sio.on("create_room")
-async def create_room(sid, room_name):
+async def create_room_sio(sid, room_name):
     # TODO: Refactor both assertions to have error handling: emit a message to "return_user_rooms" event with:
     if not isinstance(room_name, str):
         payload = {
@@ -184,6 +184,9 @@ async def create_room(sid, room_name):
     async with sio.session(sid) as session:
         # TODO: Error if username doesn't exist
         username = session["username"]
+
+        print("THIS IS THE USERNAME:", username)
+        print("THIS IS THE ROOM NAME:", room_name)
 
         async with db.transaction():
             # create a room
@@ -215,7 +218,7 @@ async def get_users_not_in_room(sid, room_id):
             payload = {"successful": False, "description": "Authentication failed"}
             await sio.emit("get_users_not_in_room_response", payload, to=sid)
             raise Exception("No permission to join the room")
-    usernames = await get_users_not_in_room(db, room_id)
+    usernames = await get_users_not_in_room_by_id(db, room_id)
 
     payload = {"successful": True, "data": usernames, "description": ""}
 

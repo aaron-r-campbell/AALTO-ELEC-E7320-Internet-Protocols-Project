@@ -29,12 +29,13 @@ async def get_user(db: Database, username: str, password: str) -> Dict:
 
 
 async def create_room(db: Database, chatroom_name: str, creator_username: str) -> int:
-    if not await user_exists(db=db, username=creator_username):
-        raise Exception(f"User {creator_username} does not exist.")
-    query = "INSERT INTO rooms name VALUES :name RETURNING room_id;"
-    values = {"name": chatroom_name}
-    room_id = await db.execute(query=query, values=values)
-    return room_id
+    async with db.transaction():
+        if not await user_exists(db=db, username=creator_username):
+            raise Exception(f"User {creator_username} does not exist.")
+        query = "INSERT INTO rooms (name) VALUES (:name) RETURNING id;"
+        values = {"name": chatroom_name}
+        room_id = await db.execute(query=query, values=values)
+        return room_id
 
 
 async def room_exists(db: Database, room_id: str) -> bool:
@@ -68,6 +69,10 @@ async def delete_room(db: Database, room_id: int):
         messages_query = "DELETE FROM messages WHERE room_id = :room_id;"
         messages_values = {"room_id": room_id}
         await db.execute(query=messages_query, values=messages_values)
+
+        query_files = "DELETE FROM files WHERE room_id = :room_id"
+        values_files = {"room_id": room_id}
+        await db.execute(query=query_files, values=values_files)
 
         mappings_query = "DELETE FROM user_room_mappings WHERE room_id = :room_id;"
         mappings_values = {"room_id": room_id}
@@ -110,7 +115,7 @@ async def user_exists_in_room(db: Database, username: str, room_id: int) -> bool
         return bool(response)
 
 
-async def get_users_not_in_room(db: Database, room_id: int) -> List[str]:
+async def get_users_not_in_room_by_id(db: Database, room_id: int) -> List[str]:
     async with db.transaction():
         if not await room_exists(db=db, room_id=room_id):
             raise Exception(f"Room with id {room_id} does not exist.")
