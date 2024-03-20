@@ -51,7 +51,7 @@
 
 <h2>User Statuses</h2>
 <div
-  style="display: flex; gap: 8px; flex-grow: 1; flex-wrap: wrap; overflow-y: scroll; overflow-x: hidden; color: var(--text-color)"
+  style="display: flex; gap: 8px; flex-wrap: wrap; overflow: hidden auto; color: var(--text-color); max-height: 400px;"
 >
   {#each users as user}
     <div
@@ -71,9 +71,10 @@
 <style>
   .pill {
     border-radius: 16px;
-    padding: 0 16px;
+    padding: 8px 16px;
     display: inline-flex;
     align-items: center;
     position: relative;
+    height: fit-content;
   }
 </style>
