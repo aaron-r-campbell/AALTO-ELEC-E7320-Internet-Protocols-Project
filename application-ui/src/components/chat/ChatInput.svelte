@@ -28,13 +28,8 @@
   <input
     type="text"
     placeholder="Type your message..."
+    style="width: calc(100% - 32px); margin: 16px;"
     bind:value={message}
     on:keydown={handleKeyPress}
   />
 </div>
-
-<style>
-  #input-container {
-    padding: 20px;
-  }
-</style>

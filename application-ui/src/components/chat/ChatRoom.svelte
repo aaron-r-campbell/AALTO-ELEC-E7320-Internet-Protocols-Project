@@ -1,24 +1,20 @@
 <script>
     import Chat from "/app/src/components/chat/Chat.svelte";
     import ChatInput from "/app/src/components/chat/ChatInput.svelte";
-    
-    export let user;
-    export let selectedRoom;
+    import InviteUsers from "/app/src/components/chat/InviteUsers.svelte";
+    import RemoveRoom from "/app/src/components/chat/RemoveRoom.svelte";
+
+    export let user, selectedRoom;
 </script>
 
-<div id="chats">
-    {#if selectedRoom.room_id !== null}
-        <Chat {user} {selectedRoom} />
-    {/if}
-    <ChatInput {user} {selectedRoom} />
+<div
+    style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;"
+>
+    <h2>{selectedRoom.room_name}</h2>
+    <div style="display: flex; gap: 8px;">
+        <InviteUsers {selectedRoom} />
+        <RemoveRoom {selectedRoom} />
+    </div>
 </div>
-
-
-<style>
-    #chats {
-        flex: 1;
-        overflow-y: auto;
-        padding: 20px;
-        background-color: #ecf0f1; /* Light background color */
-    }
-</style>
+<Chat {user} {selectedRoom} />
+<ChatInput {user} {selectedRoom} />

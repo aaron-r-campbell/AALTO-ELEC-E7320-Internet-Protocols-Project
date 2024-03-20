@@ -1,56 +1,37 @@
 <script>
+    import { state } from "/app/src/stores/state_store.js";
     import Timestamp from "/app/src/components/chat/Timestamp.svelte";
 
-    export let current_user = "",
-        sender = "",
+    export let sender = "",
         content = "",
         timestamp = "";
 </script>
 
-<div class="message-container">
-    <div
-        class="message {current_user === sender
-            ? 'own-message'
-            : 'other-message'}"
-    >
-        <p>{content}</p>
-        <span class="timestamp"
-            ><b>{sender}</b> <Timestamp time={timestamp} /></span
-        >
+<div class="card {sender == $state.username ? 'own-message' : 'other-message'}">
+    <p>{content}</p>
+    <div class="timestamp">
+        <b>{sender}</b>
+        <Timestamp time={timestamp} />
     </div>
 </div>
 
 <style>
-    .message-container {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 10px;
-    }
-
-    .message {
-        max-width: 70%;
-        padding: 10px;
-        border-radius: 8px;
-        word-wrap: break-word;
-        background-color: #ecf0f1; /* Message background color */
-    }
-
     .own-message {
         align-self: flex-end;
-        background-color: #4caf50; /* Green color for own messages */
+        background-color: #4caf50;
         color: white;
     }
 
     .other-message {
         align-self: flex-start;
-        background-color: #fff; /* Grey color for other messages */
+        background-color: white;
         color: black;
     }
 
     .timestamp {
         font-size: 12px;
-        color: #666;
-        margin-top: 5px;
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
     }
 </style>

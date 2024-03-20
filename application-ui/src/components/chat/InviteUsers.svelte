@@ -4,7 +4,9 @@
 
   export let selectedRoom;
 
-  let users_not_in_room = [];
+  let users_not_in_room = [],
+    modalVisible = false,
+    selectedUser = "";
 
   // For fetching the list of users who can be invited to a room
   onMount(async () => {
@@ -35,8 +37,6 @@
     selectedRoom.room_id, getUsersNotInRoom();
   }
 
-  let selectedUser = "";
-
   function handleSubmit(event) {
     event.preventDefault();
     console.log("Inviting user", selectedUser, "to chatroom");
@@ -52,14 +52,33 @@
       }
     });
   }
+
+  function setModal(visible) {
+    modalVisible = visible;
+  }
 </script>
 
-<form on:submit={handleSubmit}>
-  <label for="userSelect">Invite a user:</label>
-  <select id="userSelect" bind:value={selectedUser}>
-    {#each users_not_in_room as user}
-      <option value={user}>{user}</option>
-    {/each}
-  </select>
-  <button type="submit">Submit</button>
-</form>
+<button type="button" on:click={() => setModal(true)}
+  >Invite User</button
+>
+
+{#if modalVisible}
+  <div class="centerModal card" style={modalVisible ? "block" : "none"}>
+    <h2>Create Chatroom</h2>
+    <form on:submit={handleSubmit}>
+      <label for="userSelect">User to add:</label>
+      <select id="userSelect" class="fw" bind:value={selectedUser}>
+        <option value="" disabled selected hidden>Select a user</option>
+        {#each users_not_in_room as user}
+          <option value={user}>{user}</option>
+        {/each}
+      </select>
+      <div style="display:flex; justify-content: flex-end; gap: 16px;">
+        <button type="button" class="red-bg" on:click={() => setModal(false)}
+          >Cancel</button
+        >
+        <button type="submit">Add User</button>
+      </div>
+    </form>
+  </div>
+{/if}

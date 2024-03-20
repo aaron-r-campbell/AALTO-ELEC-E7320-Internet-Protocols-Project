@@ -57,6 +57,7 @@
   <button
     on:click={handleSubmit}
     disabled={isDisabled}
+    class="fw"
     style={isDisabled ? "background-color: grey; cursor: not-allowed;" : ""}
   >
     Upload test

@@ -50,8 +50,8 @@
     });
 </script>
 
-<h2>Chatrooms</h2>
-<div style="display: flex; gap: 8px;">
+<h2>Chat Rooms</h2>
+<div style="display: flex; gap: 8px; margin-bottom: 16px">
     <input
         type="text"
         placeholder="Search"
@@ -60,21 +60,15 @@
     />
     <CreateRoom />
 </div>
-<ul id="chats-list">
+<div id="chats-list">
     {#each rooms.filter((room) => searchValue == "" || room.room_name
                 .toLowerCase()
                 .includes(searchValue.toLowerCase())) as room}
-        <li>
-            <button
-                type="button"
-                class="fw"
-                on:click={handleRoomSelection(room)}
-            >
-                {room.room_name}
-            </button>
-        </li>
+        <button type="button" class="fw" on:click={handleRoomSelection(room)}>
+            {room.room_name}
+        </button>
     {/each}
-</ul>
+</div>
 
 <style>
     #chats-list {
@@ -85,16 +79,12 @@
         list-style: none;
     }
 
-    #chats-list li {
-        cursor: pointer;
-    }
-
-    #chats-list li button {
+    #chats-list button {
         color: var(--text-color);
         background-color: var(--background-color);
     }
 
-    #chats-list li button:hover {
+    #chats-list button:hover {
         background-color: var(--border-color);
     }
 </style>
