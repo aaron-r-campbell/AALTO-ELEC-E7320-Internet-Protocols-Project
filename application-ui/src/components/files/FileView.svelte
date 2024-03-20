@@ -32,19 +32,17 @@
 
 <div id="file">
     {#if selectedRoom !== null}
-        <ul>
-            {#each files as file}
-                <div style="display: flex; gap: 16px;">
-                    <button
-                        on:click={() => {
-                            selectedFileId = file.id;
-                            console.log("Clicked", selectedFileId);
-                        }}>{file.name}</button
-                    >
-                    <FileDownload {file} />
-                </div>
-            {/each}
-        </ul>
+        {#each files as file}
+            <div style="display: flex; gap: 8px;">
+                <button
+                    on:click={() => {
+                        selectedFileId = file.id;
+                        console.log("Clicked", selectedFileId);
+                    }}>{file.name}</button
+                >
+                <FileDownload {file} />
+            </div>
+        {/each}
         {#if selectedFileId}
             <File bind:selectedFileId />
         {/if}
@@ -59,5 +57,8 @@
         overflow-y: auto;
         padding: 20px;
         background-color: #ecf0f1; /* Light background color */
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
     }
 </style>

@@ -7,22 +7,29 @@
 		password = "";
 
 	const submit = async () => {
-		const response = await axios.post("/api/token", { username, password });
-
-		if (response.status === 200) {
-			// Update the token
-			state.set({
-				...$state,
-				token: response.data.token,
-				username: username,
+		try {
+			const response = await axios.post("/api/token", {
+				username,
+				password,
 			});
 
-			// Set axios bearer token header for use with withCredentials
-			axios.defaults.headers.common["Authorization"] =
-				`Bearer ${$state.token}`;
+			if (response.status === 200) {
+				// Update the token
+				state.set({
+					...$state,
+					token: response.data.token,
+					username: username,
+				});
 
-			// Logged in, go back to the main page.
-			goto("/");
+				// Set axios bearer token header for use with withCredentials
+				axios.defaults.headers.common["Authorization"] =
+					`Bearer ${$state.token}`;
+
+				// Logged in, go back to the main page.
+				goto("/");
+			} else throw Error("Invalid Login Info.");
+		} catch {
+			alert("Invalid login info.");
 		}
 	};
 </script>
