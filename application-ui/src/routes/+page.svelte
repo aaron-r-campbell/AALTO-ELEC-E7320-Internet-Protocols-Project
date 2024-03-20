@@ -2,9 +2,9 @@
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
     import io from "socket.io-client";
-    import { state } from "../stores/state_store.js";
-    import App from "../components/App.svelte";
-    import Spinner from "../components/Spinner.svelte";
+    import { state } from "/app/src/stores/state_store.js";
+    import App from "/app/src/components/App.svelte";
+    import Spinner from "/app/src/components/Spinner.svelte";
 
     let isLoading = true;
 
@@ -12,7 +12,7 @@
         if (!$state.token) {
             goto("/login");
         } else if (!$state.socket) {
-            const socket = io("http://localhost:7800");
+            const socket = io("/");
 
             // Run on authenticate response
             socket.on("authenticate_ack", (data) => {
@@ -38,7 +38,13 @@
 </script>
 
 {#if isLoading}
-    <Spinner />
+    <div class="centerInner">
+        <Spinner />
+    </div>
 {:else}
     <App />
 {/if}
+
+<style global>
+    @import "/app/public/style.css";
+</style>

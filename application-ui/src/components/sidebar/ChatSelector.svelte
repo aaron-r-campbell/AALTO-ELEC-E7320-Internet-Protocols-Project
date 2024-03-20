@@ -1,10 +1,12 @@
 <script>
     import { onMount } from "svelte";
-    import { state } from "../stores/state_store.js";
+    import { state } from "/app/src/stores/state_store.js";
+    import CreateRoom from "/app/src/components/sidebar/CreateRoom.svelte";
 
     let rooms = [];
     export let handleRoomSelection;
-    export let selectedRoomID;
+    export let selectedRoom;
+    let searchValue = "";
 
     onMount(async () => {
         try {
@@ -34,7 +36,7 @@
                         rooms = rooms.filter((x) => x.room_id !== room_id);
 
                         // If the current room doesn't exist anymore, close the chat
-                        if (!rooms.some((r) => r.room_id === selectedRoomID)) {
+                        if (!rooms.some((r) => r === selectedRoom)) {
                             handleRoomSelection(null);
                         }
                     } else {
@@ -48,12 +50,25 @@
     });
 </script>
 
+<h2>Chatrooms</h2>
+<div style="display: flex; gap: 8px;">
+    <input
+        type="text"
+        placeholder="Search"
+        style="width: 50%; margin: 0;"
+        bind:value={searchValue}
+    />
+    <CreateRoom />
+</div>
 <ul id="chats-list">
-    {#each rooms as room}
+    {#each rooms.filter((room) => searchValue == "" || room.room_name
+                .toLowerCase()
+                .includes(searchValue.toLowerCase())) as room}
         <li>
             <button
                 type="button"
-                on:click={() => handleRoomSelection(room.room_id)}
+                class="fw"
+                on:click={handleRoomSelection(room)}
             >
                 {room.room_name}
             </button>
@@ -63,21 +78,23 @@
 
 <style>
     #chats-list {
-        list-style-type: none;
         padding: 0;
-        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        list-style: none;
     }
 
     #chats-list li {
-        margin-bottom: 10px;
-        padding: 8px;
-        background-color: #34495e; /* Chat item background color */
-        color: white;
         cursor: pointer;
-        transition: background-color 0.3s ease;
     }
 
-    #chats-list li:hover {
-        background-color: #2c3e50; /* Hover state background color */
+    #chats-list li button {
+        color: var(--text-color);
+        background-color: var(--background-color);
+    }
+
+    #chats-list li button:hover {
+        background-color: var(--border-color);
     }
 </style>

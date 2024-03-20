@@ -1,6 +1,6 @@
 <script>
   import { onMount } from "svelte";
-  import { state } from "../stores/state_store.js";
+  import { state } from "/app/src/stores/state_store.js";
   let users = [];
 
   onMount(() => {
@@ -49,16 +49,17 @@
   });
 </script>
 
-<div>
-  {#each users as user}
-    <p>
-      {user.username}
+<h2>Users</h2>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+    {#each users as user}
+      <span>
+        {user.username}
 
-      {#if user.latency}
-        is online with latency {user.latency || "..."} ms
-      {:else}
-        is offline
-      {/if}
-    </p>
-  {/each}
+        {#if user.latency}
+          is online with latency {user.latency || "..."} ms
+        {:else}
+          is offline
+        {/if}
+      </span>
+    {/each}
 </div>

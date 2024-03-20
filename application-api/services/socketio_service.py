@@ -10,19 +10,30 @@ from models.data import DocumentItem
 from utils.db_util import db
 from utils.auth_util import check_jwt_token
 from services.db_service import (
-    check_user_exists,
-    get_messages,
-    save_message,
-    user_exists_in_room,
-    get_user_rooms,
+    # Users
     get_all_users,
-    add_user_to_chat_room,
-    get_usernames_not_in_room,
-    create_chat_room,
-    save_file,
+    user_exists,
+    get_user,
+    # Rooms
+    create_room,
+    room_exists,
+    room_exists_by_name,
+    get_room_name,
+    delete_room,
+    # Mappings
+    get_all_user_room_mappings,
+    add_user_to_room,
+    user_exists_in_room,
+    get_users_not_in_room_by_id,
+    get_rooms_by_user,
+    # Messages
+    create_message,
+    get_messages_by_room,
+    # Files
+    create_file,
+    file_exists,
+    update_file,
     get_file,
-    check_roomid_exists,
-    delete_room_by_id,
     get_files,
 )
 
@@ -39,6 +50,29 @@ socket_app = socketio.ASGIApp(sio)
 # Is needed for inviting other users to a chatroom
 user_sockets_mapping: Dict[str, str] = {}
 
+files: Dict[int, List[DocumentItem]] = {}
+
+
+async def scheduled_ping():
+    while True:
+        await sio.sleep(10)
+        payload = str(datetime.now())
+        print("Emitting payload:", payload)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
+        await sio.emit("ping", payload)
+
+
+async def check_user_exists_in_room(sid, event_to_emit, username, room_id):
+    if not await user_exists_in_room(db, username, room_id):
+        payload = {
+            "successful": False,
+            "description": "User is not in the room",
+            "data": None,
+        }
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
+        await sio.emit(event_to_emit, data=payload, to=sid)
+        raise Exception("no permission to send messages to the room")
+
 
 @sio.on("authenticate")
 async def authenticate(sid, token):
@@ -47,6 +81,7 @@ async def authenticate(sid, token):
     if not username:
         payload = {"successful": False, "description": "Authentication failed"}
         await sio.emit("authenticate_ack", payload, to=sid)
+
 
     try:
         """
@@ -61,7 +96,7 @@ async def authenticate(sid, token):
             # TODO: IDK what error this throws but should be handled. Currently goes to
             async with db.transaction():
                 # Get rooms that user is in to register user to receive messages from them
-                user_rooms = await get_user_rooms(db, username)
+                user_rooms = await get_rooms_by_user(db, username)
 
                 # fetch the list of users to inform that activity has changed
                 users = await get_all_users(db)
@@ -86,7 +121,7 @@ async def authenticate(sid, token):
             user_update_payload = {"username": username}
             await sio.emit("user_activities_update", user_update_payload, skip_sid=sid)
 
-            # Send initiol ping just to display ping instantly
+            # Send initial ping just to display ping instantly
             payload = str(datetime.now())
             await sio.emit("ping", payload)
 
@@ -97,7 +132,7 @@ async def authenticate(sid, token):
 
     except Exception as e:
         payload = {"successful": False, "description": "Authentication failed"}
-        # TODO: await sio.emit("authenticate_ack", data=(succesful=false, description="autherror", payload=None), to=sid)  # noqa
+        # TODO: await sio.emit("authenticate_ack", data=(successful=false, description="autherror", payload=None), to=sid)  # noqa
         await sio.emit("authenticate_ack", payload, to=sid)
         print(f"Unknown error in authenticate {e}")
 
@@ -110,33 +145,24 @@ async def remove_room(sid, room_id):
 
         async with db.transaction():
 
-            print("Here1")
-
-            if not await check_roomid_exists(db, room_id):
+            if not await room_exists(db, room_id):
                 await sio.emit(
                     "remove_room_response",
                     data=(False, "Room does not exist", None),
                     to=sid,
                 )
-                print("Here1.5")
                 raise ValueError(f"Unknown room id: {room_id}")
 
-            print("Here2")
-
-            await delete_room_by_id(db, room_id)
-
-            print("Here3")
+            await delete_room(db, room_id)
 
             await sio.emit(
                 "remove_room_response", data=(True, "", room_id), room=room_id
             )
-            print("Here3.5")
             await sio.close_room(room_id)
-            print("Here4")
 
 
 @sio.on("create_room")
-async def create_room(sid, room_name):
+async def create_room_sio(sid, room_name):
     # TODO: Refactor both assertions to have error handling: emit a message to "return_user_rooms" event with:
     if not isinstance(room_name, str):
         payload = {
@@ -161,18 +187,23 @@ async def create_room(sid, room_name):
         # TODO: Error if username doesn't exist
         username = session["username"]
 
-        # create a room
-        room_id = await create_chat_room(db, room_name, username)
+        print("THIS IS THE USERNAME:", username)
+        print("THIS IS THE ROOM NAME:", room_name)
 
-        # Add the creator to the sio room so they receive messages there
-        await sio.enter_room(sid, room_id)
+        async with db.transaction():
+            # create a room
+            room_id = await create_room(db, room_name, username)
+            # add creator to the room
+            await add_user_to_room(db, username, room_id)
+            # Add the creator to the sio room so they receive messages there
+            await sio.enter_room(sid, room_id)
 
-        # Retrieves all users for the currrent user
-        rooms = await get_user_rooms(db=db, username=username)
+        # Retrieves all users for the current user
+        rooms = await get_rooms_by_user(db=db, username=username)
         payload = {"successful": True, "description": "", "payload": rooms}
 
         # Update the room list of the creator
-        # TODO: await sio.emit("return_user_rooms", data=(succesful, description, rooms), to=sid)
+        # TODO: await sio.emit("return_user_rooms", data=(successful, description, rooms), to=sid)
         await sio.emit("return_user_rooms", payload, to=sid)
 
 
@@ -189,7 +220,7 @@ async def get_users_not_in_room(sid, room_id):
             payload = {"successful": False, "description": "Authentication failed"}
             await sio.emit("get_users_not_in_room_response", payload, to=sid)
             raise Exception("No permission to join the room")
-    usernames = await get_usernames_not_in_room(db, room_id)
+    usernames = await get_users_not_in_room_by_id(db, room_id)
 
     payload = {"successful": True, "data": usernames, "description": ""}
 
@@ -207,7 +238,7 @@ async def add_to_room(sid, room_id, new_user):
 
         async with db.transaction():
 
-            if not await check_user_exists(db, new_user):
+            if not await user_exists(db, new_user):
                 payload = {
                     "successful": False,
                     "description": "New user does not exist",
@@ -226,7 +257,7 @@ async def add_to_room(sid, room_id, new_user):
                         "description": "Inviter not in room",
                     }
 
-                    # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+                    # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
                     await sio.emit("add_to_room_response", payload, to=sid)
                     raise Exception("Inviter is not in room")
 
@@ -236,12 +267,12 @@ async def add_to_room(sid, room_id, new_user):
                     "successful": False,
                     "description": f"User '{new_user}' is already in the room",
                 }
-                # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+                # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
                 await sio.emit("add_to_room_response", payload, to=sid)
                 raise Exception("Invited user already exists in room")
 
             # Add user to the database
-            await add_user_to_chat_room(db, new_user, room_id)
+            await add_user_to_room(db, new_user, room_id)
 
             # If the user is currently online, notify them immediately
             if new_user in user_sockets_mapping:
@@ -251,21 +282,21 @@ async def add_to_room(sid, room_id, new_user):
                 await sio.enter_room(new_user_sid, room_id)
 
                 # Fetch the new list of rooms that the invited user is in
-                rooms = await get_user_rooms(db=db, username=new_user)
+                rooms = await get_rooms_by_user(db=db, username=new_user)
                 payload = {"successful": True, "description": "", "payload": rooms}
 
                 # Notify the invited user
-                # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+                # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
                 await sio.emit("return_user_rooms", payload, to=new_user_sid)
 
-        # Notify the inviter that the invitation was succesful
-        payload = {"successful": True, "description": "Room joined succesfully"}
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        # Notify the inviter that the invitation was successful
+        payload = {"successful": True, "description": "Room joined successfully"}
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("add_to_room_response", payload, to=sid)
 
     except ValueError:
         payload = {"successful": False, "description": "Invalid room ID"}
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("add_to_room_response", payload, to=sid)
 
     except KeyError:
@@ -273,7 +304,7 @@ async def add_to_room(sid, room_id, new_user):
             "successful": False,
             "description": "No username found in session",
         }
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("add_to_room_response", payload, to=sid)
 
     except Exception as e:
@@ -282,7 +313,7 @@ async def add_to_room(sid, room_id, new_user):
             "successful": False,
             "description": "Error occurred while joining a room",
         }
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("add_to_room_response", payload, to=sid)
 
 
@@ -292,10 +323,10 @@ async def get_room_files(sid, _=None):
     async with sio.session(sid) as session:
         # TODO: Error if username doesn't exist
         username = session["username"]
-        rooms = await get_user_rooms(db=db, username=username)
+        rooms = await get_rooms_by_user(db=db, username=username)
         payload = {"successful": True, "description": "", "payload": rooms}
         print("ROOMS:", rooms)
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("return_user_rooms", payload, to=sid)
 
 
@@ -314,15 +345,15 @@ async def fetch_room_messages(sid, room_id):
                 "successful": False,
                 "description": "User is not in the room",
             }
-            # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+            # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
             await sio.emit("fetch_room_messages_response", payload, to=sid)
             raise Exception("No permission to join the room")
 
-        messages = await get_messages(db, room_id)
+        messages = await get_messages_by_room(db, room_id)
         payload = {"successful": True, "description": "", "messages": messages}
 
         print(messages)
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("fetch_room_messages_response", payload, to=sid)
 
 
@@ -343,11 +374,11 @@ async def send_message(sid, message, room_id):
                 "description": "User is not in the room",
                 "data": None,
             }
-            # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+            # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
             await sio.emit("receive_msg", data=payload, to=sid)
             raise Exception("no permission to send messages to the room")
         # Save the message
-        await save_message(db, username, room_id, message)
+        await create_message(db, username, room_id, message)
 
         # Prepare data to emit
         data = {
@@ -367,7 +398,7 @@ async def send_message(sid, message, room_id):
         print("Sending payload", payload)
 
         # Emit the message to the room
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("receive_msg", data=payload, room=room_id)
 
     except ValueError as ve:
@@ -375,9 +406,6 @@ async def send_message(sid, message, room_id):
 
     except Exception as e:
         print(f"Exception occurred while sending message: {e}")
-
-
-files: Dict[int, List[DocumentItem]] = {}
 
 
 @sio.on("upload_document")
@@ -394,7 +422,7 @@ async def upload_document(sid, room_id, json_data, filename):
 
         check_user_exists_in_room(sid, "upload_document_response", username, room_id)
 
-        file_id = await save_file(db, room_id, filename)
+        file_id = await create_file(db, room_id, filename)
         files[file_id] = []
 
         data = json.loads(json_data)
@@ -409,7 +437,18 @@ async def upload_document(sid, room_id, json_data, filename):
         await sio.emit("upload_file_response", room=room_id, data=response)
 
     except Exception as e:
-        print(f"Exception occured while uploading document: {e}")
+        print(f"Exception occurred while uploading document: {e}")
+
+
+@sio.on("get_room_files")
+async def get_room_files(sid, room_id):
+    print("get_room_files sid:", sid)
+    async with sio.session(sid) as session:
+        # TODO: Error if username doesn't exist
+        username = session["username"]
+        files = await get_files(db=db, room_id=room_id)
+        payload = {"successful": True, "description": "", "files": files}
+        await sio.emit("return_room_files", payload, to=sid)
 
 
 @sio.on("get_room_files")
@@ -449,13 +488,13 @@ async def join_file_edit(sid, file_id):
         }
         await sio.emit("join_file_edit_response", room=sid, data=response)
     except Exception as e:
-        print(f"Exception occured while joining the room for document editing")
+        print(f"Exception occurred while joining the room for document editing: {e}")
 
 
 @sio.on("update_file")
 async def update_document(sid, file_id, operation_type, char, position):
     try:
-        print(f"update_document has been called")
+        print("update_document has been called")
         file_id = int(file_id)
 
         # Get the user name from the session
@@ -479,7 +518,7 @@ async def update_document(sid, file_id, operation_type, char, position):
         await sio.emit("update_document_response", room=file_id, data=response)
 
     except Exception as e:
-        print(f"error while updateing document: {e}")
+        print(f"error while updating document: {e}")
 
 
 @sio.on("test_download")
@@ -495,7 +534,7 @@ async def test_download(sid, _):
     # For future, grow the payload size based on connection speed to reduce the effect of latency.
     print("Starting download")
     while (end_time - start_time).total_seconds() < 10:  # Do for 10 seconds
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("receive_throughput", data=binary_payload, to=sid)
         packets_sent += 1
         end_time = datetime.now()
@@ -504,7 +543,7 @@ async def test_download(sid, _):
 
     print("GOT THROUGHPUT:", throughput_kbps)
 
-    # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+    # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
     await sio.emit("throughput_download_result", data=throughput_kbps, to=sid)
 
 
@@ -518,7 +557,7 @@ async def disconnect(sid):
 
         user_update_payload = {"username": username}
 
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("user_activities_update", user_update_payload, skip_sid=sid)
 
 
@@ -533,26 +572,5 @@ async def ping_ack(sid, time_string):
         # Returns the time difference in milliseconds
         time_difference = int((current_time - ack_time).total_seconds() * 1000)
 
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
+        # TODO: await sio.emit("event", data=(successful, description, rooms), to=sid)
         await sio.emit("ping_result", data=(time_difference, username))
-
-
-async def scheduled_ping():
-    while True:
-        await sio.sleep(10)
-        payload = str(datetime.now())
-        print("Emitting payload:", payload)
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
-        await sio.emit("ping", payload)
-
-
-async def check_user_exists_in_room(sid, event_to_emit, username, room_id):
-    if not await user_exists_in_room(db, username, room_id):
-        payload = {
-            "successful": False,
-            "description": "User is not in the room",
-            "data": None,
-        }
-        # TODO: await sio.emit("event", data=(succesful, description, rooms), to=sid)
-        await sio.emit(event_to_emit, data=payload, to=sid)
-        raise Exception("no permission to send messages to the room")

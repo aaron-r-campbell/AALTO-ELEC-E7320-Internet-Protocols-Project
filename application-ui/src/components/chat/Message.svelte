@@ -1,5 +1,5 @@
 <script>
-    import Timestamp from "./Timestamp.svelte";
+    import Timestamp from "/app/src/components/chat/Timestamp.svelte";
 
     export let current_user = "",
         sender = "",

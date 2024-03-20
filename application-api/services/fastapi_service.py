@@ -14,7 +14,7 @@ async def login(request: Request):
         data = await request.json()
         username = data.get("username")
         password = data.get("password")
-    except:
+    except Exception:
         raise HTTPException(status_code=400, detail="Payload not valid JSON")
 
     if not username or not password:
@@ -39,7 +39,7 @@ async def download(request: Request, username: str = Depends(check_jwt_token)):
     try:
         size_kb = int(request.query_params.get("size_kb", 1))
     except Exception:
-        raise HTTPException(status_code=400, detail="Unknown error")
+        raise HTTPException(status_code=400, detail="Integer url parameter size_kb is required.")
 
     print("DOWNLOAD SIZE:", size_kb)
 

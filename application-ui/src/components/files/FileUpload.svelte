@@ -1,6 +1,6 @@
 <script>
     import { onMount } from "svelte";
-    import { state } from "../../stores/state_store.js";
+    import { state } from "/app/src/stores/state_store.js";
 
     export let selectedRoomID;
     let hidden;

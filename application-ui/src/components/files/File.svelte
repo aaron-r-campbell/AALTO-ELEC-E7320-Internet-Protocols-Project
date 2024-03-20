@@ -1,4 +1,5 @@
 <script>
+    import FileUpload from "/app/src/components/files/FileUpload.svelte";
     import { onMount } from "svelte";
     import { state } from "../../stores/state_store.js";
 

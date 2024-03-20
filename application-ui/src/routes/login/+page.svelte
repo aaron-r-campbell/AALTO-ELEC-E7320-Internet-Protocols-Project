@@ -1,7 +1,7 @@
 <script>
 	import axios from "axios";
 	import { goto } from "$app/navigation";
-	import { state } from "../../stores/state_store.js";
+	import { state } from "/app/src/stores/state_store.js";
 
 	let username = "",
 		password = "";
@@ -27,20 +27,33 @@
 	};
 </script>
 
-<form on:submit|preventDefault={submit}>
-	<h1>Sign in:</h1>
+<div class="centerInner">
+	<div class="card">
+		<h1>Sign in</h1>
+		<form on:submit|preventDefault={submit}>
+			<label for="username">Username</label>
+			<input
+				class="fw"
+				bind:value={username}
+				type="text"
+				placeholder="Enter your username"
+				required
+			/>
 
-	<br />
+			<label for="password">Password</label>
+			<input
+				class="fw"
+				bind:value={password}
+				type="password"
+				placeholder="Enter your password"
+				required
+			/>
 
-	<label for="username">Username</label>
-	<input bind:value={username} type="username" placeholder="username" />
+			<button type="submit" class="fw">Sign in</button>
+		</form>
+	</div>
+</div>
 
-	<br />
-
-	<label for="password">Password</label>
-	<input bind:value={password} type="password" placeholder="password" />
-
-	<br />
-
-	<button type="submit">Submit</button>
-</form>
+<style global>
+	@import "/app/public/style.css";
+</style>

@@ -6,33 +6,27 @@
   let isDisabled = false;
 
   // Function to initiate the download request
-  const uploadTest = async () => {
+  const downloadTest = async () => {
     try {
       let delay_milliseconds = 0;
 
+      // Iteratively increase delay until test lasts longer than 10 seconds
       while (delay_milliseconds < 5000) {
-        const payload = new Uint8Array(sizeKB * 1024).fill("A".charCodeAt(0));
+        console.log("Previous delay:", delay_milliseconds);
+        const url = `/api/throughput_download?size_kb=${sizeKB}`;
 
         const start = Date.now();
 
-        const response = await axios.post(
-          "http://localhost:7800/api/throughput_upload",
-          payload.buffer,
-          {
-            headers: {
-              "Content-Type": "application/octet-stream",
-            },
-            responseType: "json",
-          },
-        );
+        await axios.get(url, {
+          responseType: "blob",
+          timeout: 30000,
+        });
 
         const end = Date.now();
 
         delay_milliseconds = end - start;
 
-        console.log("Response:", response.data);
-        console.log("Delay milliseconds:", delay_milliseconds);
-
+        // Maybe looks nicer when the value updates during the test
         if (delay_milliseconds > 0) {
           throughputMbps = Math.trunc(
             (8 * sizeKB) / (delay_milliseconds / 1000) / 1024,
@@ -41,14 +35,20 @@
 
         sizeKB = sizeKB * 2;
       }
+
+      // Reset the sizeKB for future tests
+      sizeKB = 1024;
+
+      // Save the response data into a variable
     } catch (error) {
-      console.error("Error:", error.response.data);
+      console.error("Error downloading file:", error);
+      return null; // Return null in case of error
     }
   };
 
   const handleSubmit = async () => {
     isDisabled = true;
-    await uploadTest();
+    await downloadTest();
     isDisabled = false;
   };
 </script>
@@ -59,11 +59,11 @@
     disabled={isDisabled}
     style={isDisabled ? "background-color: grey; cursor: not-allowed;" : ""}
   >
-    Upload test
+    Download test
   </button>
   {#if throughputMbps !== null}
-    <p>Upload throughput estimate: {throughputMbps} Kbps</p>
+    <p>Download throughput estimate: {throughputMbps} Mbps</p>
   {:else}
-    <p>No upload throughput estimate available</p>
+    <p>No download throughput estimate available</p>
   {/if}
 </div>

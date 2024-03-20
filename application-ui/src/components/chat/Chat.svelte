@@ -1,20 +1,20 @@
 <script>
-    import { state } from "../stores/state_store.js";
+    import { state } from "/app/src/stores/state_store.js";
     import { onMount } from "svelte";
 
-    import Message from "../components/Message.svelte";
-    import InviteUsers from "../components/InviteUsers.svelte";
-    import RemoveRoom from "../components/RemoveRoom.svelte";
+    import Message from "/app/src/components/chat/Message.svelte";
+    import InviteUsers from "/app/src/components/chat/InviteUsers.svelte";
+    import RemoveRoom from "/app/src/components/chat/RemoveRoom.svelte";
 
     export let user = {};
-    export let selectedRoomID = null;
+    export let selectedRoom = null;
 
     let messages = [];
 
     const getRoomMessages = () => {
         return new Promise((resolve, reject) => {
             console.log("Fetching room messages");
-            $state.socket.emit("fetch_room_messages", selectedRoomID);
+            $state.socket.emit("fetch_room_messages", selectedRoom.room_id);
 
             // Don't fetch messages for the other chats that might have been previously open
             $state.socket.off("fetch_room_messages_response");
@@ -39,7 +39,7 @@
 
     const fetchMessages = async () => {
         try {
-            if (selectedRoomID === null) {
+            if (selectedRoom.room_id === null) {
                 console.log("Null user. Waiting for update");
                 return;
             }
@@ -51,7 +51,7 @@
 
             $state.socket.on("receive_msg", (data) => {
                 console.log("Received message from room", data.room_id);
-                if (data.room_id !== selectedRoomID) {
+                if (data.room_id !== selectedRoom.room_id) {
                     reject("Not in currently selected room");
                 }
 
@@ -81,15 +81,15 @@
         }
     };
 
-    $: selectedRoomID, fetchMessages();
+    $: selectedRoom.room_id, fetchMessages();
 </script>
 
-<h1>Chat Name</h1>
+<h1>{selectedRoom.room_name}</h1>
 <div>
-    <InviteUsers {selectedRoomID} />
+    <InviteUsers {selectedRoom} />
 </div>
 <div>
-    <RemoveRoom {selectedRoomID} />
+    <RemoveRoom {selectedRoom} />
 </div>
 <div>
     {#each messages as message}

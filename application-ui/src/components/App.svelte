@@ -1,99 +1,87 @@
 <script>
-    import ChatSelector from "../components/ChatSelector.svelte";
-    import UserInfo from "../components/UserInfo.svelte";
-    import PeerInfo from "../components/PeerInfo.svelte";
-    import CreateRoom from "../components/CreateRoom.svelte";
-    import { navOptions } from "../components/Nav.svelte";
-    import DownThroughputTest from "../components/DownThroughputTest.svelte";
-    import UploadThroughputTest from "../components/UploadThroughputTest.svelte";
+    import Sidebar from "/app/src/components/sidebar/Sidebar.svelte";
+    import ChatRoom from "/app/src/components/chat/ChatRoom.svelte";
+    import File from "/app/src/components/files/File.svelte";
 
-    let selected = navOptions[0]; // keep track of the selected 'page' object
-    let intSelected = 0; //selected page index
+    const navOptions = [
+        { page: "messages", component: "ChatRoom" },
+        { page: "file", component: "File" },
+    ];
 
+    let selectedComponent = "ChatRoom";
     let user = {};
-    let selectedRoomID = null;
+    let selectedRoom = null;
 
-    function handleRoomSelection(roomID) {
-        console.log("CHANGING TO ROOM", roomID);
-        selectedRoomID = roomID;
+    function handleRoomSelection(room) {
+        console.log("CHANGING TO ROOM", room);
+        selectedRoom = room;
     }
 
-    // chcange the selected component (event.srcElement.id refers to the ID attribute of the HTL element that triggered the event)
-    function changeComponent(event) {
-        selected = navOptions[event.srcElement.id];
-        intSelected = event.srcElement.id;
+    function changeComponent(component) {
+        console.log("CHANGING TO VIEW", component);
+        selectedComponent = component;
     }
-
-    console.log("hello");
 </script>
 
-<!-- Include Bootstrap CSS-->
-<link
-    rel="stylesheet"
-    href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
-/>
-<div id="app">
-    <div id="sidebar">
-        <UserInfo bind:user />
-        <CreateRoom />
-        <ChatSelector {handleRoomSelection} {selectedRoomID} />
-        <PeerInfo />
-        <DownThroughputTest />
-        <UploadThroughputTest />
+<Sidebar {handleRoomSelection} {selectedRoom} />
+<div id="page">
+    <div class="navbar">
+        {#each navOptions as option, i}
+            <button
+                class={option.component === selectedComponent ? "" : "inactive"}
+                on:click={() => {
+                    console.log("CHANGING TO VIEW", option.component);
+                    selectedComponent = option.component;
+                }}>{option.page}</button
+            >
+        {/each}
     </div>
-    <div id="page">
-        <!--app navigation -->
-        <ul class="nav nav-tabs">
-            {#each navOptions as option, i}
-                <li class="nav-item">
-                    <button
-                        class={intSelected == i
-                            ? "nav-link active p-2 ml-1"
-                            : "p-2 ml-1 nav-link"}
-                        on:click={changeComponent}
-                        id={i}
-                        role="tab">{option.page}</button
-                    >
-                </li>
-            {/each}
-        </ul>
-        <div id="page-content">
-            <svelte:component
-                this={selected.component}
-                {user}
-                {selectedRoomID}
-            />
-        </div>
+    <div id="page-content">
+        {#if selectedRoom === null}
+            <div class="centerInner">
+                <h1 style="color: #999;">
+                    Select a chatroom from the sidebar to begin.
+                </h1>
+            </div>
+        {:else if selectedComponent === "ChatRoom"}
+            <ChatRoom {user} {selectedRoom} />
+        {:else if selectedComponent === "File"}
+            <File {user} {selectedRoom} />
+        {/if}
     </div>
 </div>
 
 <style>
-    #app {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        height: 100vh;
-        width: 100%;
-    }
-
-    #sidebar {
-        width: 250px;
-        background-color: #2c3e50; /* Dark background color */
-        padding: 20px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        color: white; /* Text color */
-    }
-
     #page {
         display: flex;
         flex-direction: column;
-        margin-bottom: 20px; /* Adjust as needed */
+        margin-bottom: 20px;
         width: 100%;
     }
 
     #page-content {
         margin-top: 10px;
-        flex: 1; /* Grow to fill remaining space */
+        flex: 1;
+    }
+
+    .navbar {
+        display: flex;
+        gap: 8px;
+        padding: 8px;
+        padding-bottom: 0;
+        background-color: #fff;
+    }
+
+    .navbar button {
+        border-bottom-right-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .inactive {
+        background-color: #2b2b2b;
+    }
+
+    .inactive:hover {
+        background-color: #4b4b4b;
     }
 </style>
