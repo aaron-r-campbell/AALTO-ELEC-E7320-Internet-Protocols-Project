@@ -33,6 +33,7 @@
 		<form on:submit|preventDefault={submit}>
 			<label for="username">Username</label>
 			<input
+				class="fw"
 				bind:value={username}
 				type="text"
 				placeholder="Enter your username"
@@ -41,6 +42,7 @@
 
 			<label for="password">Password</label>
 			<input
+				class="fw"
 				bind:value={password}
 				type="password"
 				placeholder="Enter your password"

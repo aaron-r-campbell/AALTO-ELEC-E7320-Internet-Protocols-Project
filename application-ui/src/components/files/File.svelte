@@ -1,7 +1,7 @@
 <script>
     import FileUpload from "/app/src/components/files/FileUpload.svelte";
 
-    export let selectedRoom, user;
+    export let selectedRoom;
     let editableDiv;
 
     let objects = [];

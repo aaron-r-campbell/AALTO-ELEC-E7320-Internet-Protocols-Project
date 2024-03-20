@@ -52,15 +52,6 @@
 </div>
 
 <style>
-    #sidebar {
-        width: 30%;
-        min-width: 250px;
-        background-color: #2b2b2b;
-        padding: 20px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        color: white;
-    }
-
     #page {
         display: flex;
         flex-direction: column;
