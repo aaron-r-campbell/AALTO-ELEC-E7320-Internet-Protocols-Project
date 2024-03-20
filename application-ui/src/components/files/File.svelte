@@ -9,16 +9,29 @@
         crdtArray = [];
 
     function handleEdit(event) {
+        const cursorPosition = event.target.selectionStart;
+
+        const changeType = event.inputType;
+        let insertedChar = event.data; // Inserted character
+
+        // console.log(content);
+        console.log(crdtArray);
         console.log("Change:", event);
 
-        const cursorPosition = event.target.selectionStart;
-        const changeType = event.inputType;
-        const insertedChar = event.data; // Inserted character
+        console.log("cursorPosition", cursorPosition);
+        console.log("changeType", changeType);
+        console.log("insertedChar", insertedChar);
+        console.log("lenght", crdtArray.length);
+
+        if (changeType == "insertLineBreak") {
+            insertedChar = "\n";
+        }
+
+        // const token_at_cursorposition = crdtArray[cursorPosition];
+
+        // console.log("token_at_cursorposition", token_at_cursorposition);
 
         // Determine the index of the CRDT array corresponding to the cursor position
-        const crdtIndex =
-            crdtArray.findIndex((char) => char.position >= cursorPosition) ||
-            crdtArray.length;
 
         if (changeType === "deleteContentBackward") {
             // Deletion logic
@@ -34,24 +47,32 @@
                 }
             }
         } else {
+            const cursor_start_index = cursorPosition - 1;
+            // const crdtIndex =
+            //     crdtArray.findIndex(
+            //         (char) => char.position >= token_at_cursorposition.position,
+            //     ) || crdtArray.length;
             // Insertion logic
             console.log("HELO");
-            console.log(crdtArray);
             let newPosition;
             if (crdtArray.length === 0) {
+                console.log("Insertion to empty");
                 // If the CRDT array is empty, the new character should start with position 1
                 newPosition = 1;
-            } else if (crdtIndex === 0) {
+            } else if (cursor_start_index === 0) {
                 // Insertion at the beginning of the text
+                console.log("Inserting to beginning");
                 newPosition = crdtArray[0].position / 2;
-            } else if (crdtIndex === crdtArray.length) {
+            } else if (cursor_start_index === crdtArray.length) {
                 // Insertion at the end of the text
+                console.log("Inserting to end");
                 console.log(crdtArray[crdtArray.length - 1]);
-                newPosition = crdtArray[crdtArray.length - 1].position + 1;
+                newPosition = crdtArray[cursor_start_index - 1].position + 1;
             } else {
+                console.log("Insertion between");
                 // Insertion between characters
-                const prevPosition = crdtArray[crdtIndex - 1].position;
-                const nextPosition = crdtArray[crdtIndex].position;
+                const prevPosition = crdtArray[cursor_start_index - 1].position;
+                const nextPosition = crdtArray[cursor_start_index].position;
                 newPosition = (prevPosition + nextPosition) / 2;
             }
 
@@ -63,8 +84,6 @@
                 newPosition,
             );
         }
-
-        console.log("Updated CRDT array:", crdtArray);
     }
 
     const getFileContents = async () => {
@@ -139,7 +158,8 @@
                         .sort((a, b) => a.position - b.position)
                         .map((obj) => obj.char)
                         .join("");
-                    console.log(content);
+                    console.log("content:", content);
+                    console.log("crdtArray:", crdtArray);
                 } else {
                     console.error(
                         "Error in fetching file update:",

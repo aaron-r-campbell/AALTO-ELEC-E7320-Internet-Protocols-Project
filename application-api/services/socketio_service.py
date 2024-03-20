@@ -510,7 +510,8 @@ async def join_file_edit(sid, file_id):
 async def update_document(sid, file_id, operation_type, char, position):
     try:
         print(f"update_document has been called to {file_id}")
-        print(file_content_list[file_id])
+        print(sid, file_id, operation_type, char, position)
+        # print(file_content_list[file_id])
         file_id = int(file_id)
 
         # Get the user name from the session
@@ -528,6 +529,8 @@ async def update_document(sid, file_id, operation_type, char, position):
         
         if operation_type == "insertText":
             file_content_list[file_id].append(DocumentItem(char=char, position=position))
+        elif operation_type == "insertLineBreak":
+            file_content_list[file_id].append(DocumentItem(char="\n", position=position))
         elif operation_type == "deleteContentBackward":
             file_content_list[file_id] = [item for item in file_content_list[file_id] if item.position != position]
         else:
