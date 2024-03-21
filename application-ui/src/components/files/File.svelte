@@ -35,17 +35,33 @@
 
         if (changeType === "deleteContentBackward") {
             // Deletion logic
-            const deletedCharPosition = cursorPosition;
-            const charToDeleteIndex = crdtArray.findIndex(
-                (char) => char.position === deletedCharPosition,
+            const deletedChar = crdtArray[cursorPosition];
+            console.log("deletedChar", deletedChar);
+
+            // const charToDeleteIndex = crdtArray.findIndex(
+            // (char) => char.position === deletedCharPosition,
+            // );
+            // console.log("deletedCharPosition", deletedCharPosition);
+            // console.log("charToDeleteIndex", charToDeleteIndex);
+            // if (charToDeleteIndex !== -1) {
+            //     crdtArray.splice(charToDeleteIndex, 1);
+            //     // Update positions of subsequent characters in the CRDT array
+            //     for (let i = charToDeleteIndex; i < crdtArray.length; i++) {
+            //         crdtArray[i].position--;
+            //     }
+            // }
+
+            // crdtArray.splice(cursorPosition, 1);
+
+            console.log("crdtArray after delete:", crdtArray);
+
+            $state.socket.emit(
+                "update_file",
+                selectedFileId,
+                changeType,
+                deletedChar.char,
+                deletedChar.position,
             );
-            if (charToDeleteIndex !== -1) {
-                crdtArray.splice(charToDeleteIndex, 1);
-                // Update positions of subsequent characters in the CRDT array
-                for (let i = charToDeleteIndex; i < crdtArray.length; i++) {
-                    crdtArray[i].position--;
-                }
-            }
         } else {
             const cursor_start_index = cursorPosition - 1;
             // const crdtIndex =
@@ -146,13 +162,29 @@
                 }
                 if (response?.successful) {
                     console.log("Here2");
-                    crdtArray = [
-                        ...crdtArray,
-                        {
-                            char: response.data.char,
-                            position: response.data.position,
-                        },
-                    ];
+                    if (response.data.operation_type == "insertText") {
+                        crdtArray = [
+                            ...crdtArray,
+                            {
+                                char: response.data.char,
+                                position: response.data.position,
+                            },
+                        ];
+                    } else if (
+                        response.data.operation_type == "deleteContentBackward"
+                    ) {
+                        let deleteIndex = crdtArray.findIndex((item) => {
+                            return (
+                                item.char === response.data.char &&
+                                item.position === response.data.position
+                            );
+                        });
+
+                        // Remove the character
+                        crdtArray.splice(deleteIndex, 1);
+                    }
+
+                    // Actually set the content
                     console.log("Setting content");
                     content = crdtArray
                         .sort((a, b) => a.position - b.position)
