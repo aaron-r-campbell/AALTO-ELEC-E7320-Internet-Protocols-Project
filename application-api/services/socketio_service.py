@@ -530,17 +530,14 @@ async def update_document(sid, file_id, operation_type, char, position):
         if operation_type == "insertText":
             file_content_list[file_id].append(DocumentItem(char=char, position=position))
         elif operation_type == "insertLineBreak":
-            file_content_list[file_id].append(DocumentItem(char="\n", position=position))
+            file_content_list[file_id].append(DocumentItem(char=char, position=position))
+            print("In insertLineBreak with array:", [x.to_json() for x in file_content_list[file_id]])
         elif operation_type == "deleteContentBackward":
             # contents = file_content_list[file_id]
-            print("Here1")
-            print("In deleteContentBackward with array:", [x.to_json() for x in file_content_list[file_id]])
-            print("Here2")
             # Get index of the removed char
             char_index = next((idx for idx, di in enumerate(file_content_list[file_id]) if di.char == char and di.position == position), None)
-            print("Here3")
-            print("Found char_index", char_index)
-            print("Found char_index", char_index, "with char:", file_content_list[file_id][char_index])
+            # print("Found char_index", char_index)
+            # print("Found char_index", char_index, "with char:", file_content_list[file_id][char_index])
             removed_char = file_content_list[file_id].pop(char_index)
             print("Removed char:", removed_char)
             print("crdtArray:", [x.to_json() for x in file_content_list[file_id]])

@@ -23,10 +23,6 @@
         console.log("insertedChar", insertedChar);
         console.log("lenght", crdtArray.length);
 
-        if (changeType == "insertLineBreak") {
-            insertedChar = "\n";
-        }
-
         // const token_at_cursorposition = crdtArray[cursorPosition];
 
         // console.log("token_at_cursorposition", token_at_cursorposition);
@@ -62,8 +58,21 @@
                 deletedChar.char,
                 deletedChar.position,
             );
-        } else {
+        } else if (
+            changeType == "insertText" ||
+            changeType == "insertLineBreak"
+        ) {
+            console.log("Inside the insertText block");
             const cursor_start_index = cursorPosition - 1;
+
+            if (changeType == "insertLineBreak") {
+                insertedChar = "\n";
+            }
+            // For stange newline behaviour, might not be always correct but for now better than nothing.
+            if (changeType == "insertText" && insertedChar == null) {
+                insertedChar = "\n";
+            }
+
             // const crdtIndex =
             //     crdtArray.findIndex(
             //         (char) => char.position >= token_at_cursorposition.position,
@@ -91,6 +100,16 @@
                 const nextPosition = crdtArray[cursor_start_index].position;
                 newPosition = (prevPosition + nextPosition) / 2;
             }
+
+            console.log(
+                "Emission:",
+                selectedFileId,
+                changeType,
+                insertedChar,
+                newPosition,
+            );
+
+            console.log("END OF EMISSION IN HANDLE EDIT!!!");
 
             $state.socket.emit(
                 "update_file",
@@ -152,7 +171,7 @@
 
             $state.socket.on("update_file_response", (response) => {
                 console.log(
-                    `update_file_response, char: {response.data.char} position: {response.data.position}`,
+                    `update_file_response, char: ${response.data.char} position: ${response.data.position}`,
                 );
                 if (response.data.file_id !== selectedFileId) {
                     console.log("Here1");
@@ -182,9 +201,19 @@
 
                         // Remove the character
                         crdtArray.splice(deleteIndex, 1);
+                    } else if (
+                        response.data.operation_type == "insertLineBreak"
+                    ) {
+                        crdtArray = [
+                            ...crdtArray,
+                            {
+                                char: response.data.char,
+                                position: response.data.position,
+                            },
+                        ];
                     }
 
-                    // Actually set the content
+                    // Actually set the content based on the creditArray
                     console.log("Setting content");
                     content = crdtArray
                         .sort((a, b) => a.position - b.position)
