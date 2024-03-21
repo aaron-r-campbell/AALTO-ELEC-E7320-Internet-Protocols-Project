@@ -17,8 +17,7 @@
       const start = Date.now();
 
       try {
-        const payload = new Uint8Array(sizeMB * 1024 * 1024);
-        crypto.getRandomValues(payload);
+        const payload = new Uint8Array(sizeMB * 1024 * 1024).fill(0xff);
         await axios.post("/api/throughput_upload", payload.buffer, {
           headers: {
             "Content-Type": "application/octet-stream",
