@@ -10,6 +10,7 @@ from models.data import DocumentItem
 from utils.db_util import db
 from utils.auth_util import check_jwt_token
 from services.db_service import (
+    file_content_list,
     # Users
     get_all_users,
     user_exists,
@@ -50,7 +51,6 @@ socket_app = socketio.ASGIApp(sio)
 # Is needed for inviting other users to a chatroom
 user_sockets_mapping: Dict[str, str] = {}
 
-file_content_list: Dict[int, List[DocumentItem]] = {}
 
 
 async def scheduled_ping():
@@ -468,41 +468,41 @@ async def get_room_files(sid, room_id):
 
 @sio.on("join_file_edit")
 async def join_file_edit(sid, file_id):
-    try:
-        print(f"join_document_edit called for document id: {file_id}")
-        file_id = int(file_id)
+    await sio.enter_room(sid=sid, room=file_id)
 
-        # Get the user name from the session
-        session = await sio.get_session(sid)
+    # try:
+    #     print(f"join_document_edit called for document id: {file_id}")
+    #     file_id = int(file_id)
 
-        # TODO: Error if username doesn't exist
-        username = session["username"]
+    #     # Get the user name from the session
+    #     session = await sio.get_session(sid)
 
-        file = await get_file(db, file_id)
-        room_id = file["room_id"]
+    #     # TODO: Error if username doesn't exist
+    #     username = session["username"]
 
-        await check_user_exists_in_room(sid, "join_file_edit_response", username, room_id)
+    #     file = await get_file(db, file_id)
+    #     room_id = file["room_id"]
 
-        await sio.enter_room(sid=sid, room=file_id)
-        if not file_id in file_content_list:
-            file_content_list[file_id] = []
+    #     await check_user_exists_in_room(sid, "join_file_edit_response", username, room_id)
 
-        # print("file_content_list[file_id]:", file_content_list[file_id])
-        # print("file_content_list[file_id][0]:", file_content_list[file_id][0])
-        # print("file_content_list[file_id][0]:", file_content_list[file_id][0].to_dict())
+    #     await sio.enter_room(sid=sid, room=file_id)
+    #     if not file_id in file_content_list:
+    #         file_content_list[file_id] = []
 
-        response = {
-            "successful": True,
-            "Description": f"Joined the document editing successfully to id: {file_id}",
-            "data": [character.to_dict() for character in file_content_list[file_id]],
-        }
+    #     # print("file_content_list[file_id]:", file_content_list[file_id])
+    #     # print("file_content_list[file_id][0]:", file_content_list[file_id][0])
+    #     # print("file_content_list[file_id][0]:", file_content_list[file_id][0].to_dict())
 
-        # print("Here2")
-        
-        await sio.emit("join_file_edit_response", room=sid, data=response)
+    #     response = {
+    #         "successful": True,
+    #         "Description": f"Joined the document editing successfully to id: {file_id}",
+    #         "data": [character.to_dict() for character in file_content_list[file_id]],
+    #     }
 
-    except Exception as e:
-        print(f"Exception occurred while joining the room for document editing: {e}")
+    #     await sio.emit("join_file_edit_response", room=sid, data=response)
+
+    # except Exception as e:
+    #     print(f"Exception occurred while joining the room for document editing: {e}")
 
 
 #operation_type could be "insertText" or "deleteContentBackward"

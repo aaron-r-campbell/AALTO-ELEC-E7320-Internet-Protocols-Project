@@ -2,6 +2,7 @@
     import FileUpload from "../../components/files/FileUpload.svelte";
     import { onMount } from "svelte";
     import { state } from "../../stores/state_store.js";
+    import axios from "axios";
 
     export let selectedFileId;
     let textarea,
@@ -123,29 +124,31 @@
 
     const getFileContents = async () => {
         console.log("Getting file contents");
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             console.log("Emitting join_file_edit");
-            $state.socket.emit("join_file_edit", selectedFileId);
-
             // Stop getting updates from other files
             $state.socket.off("join_file_edit_response");
 
-            $state.socket.on("join_file_edit_response", (data) => {
-                console.log("GOT join_file_edit_response", data);
-                if (data?.successful) {
-                    // console.log("Here is the data:", data);
-                    console.log(
-                        `User has joined to edit the file: ${selectedFileId}`,
-                    );
-                    resolve(data.data);
-                } else {
-                    console.error(
-                        "Error in fetching room messages:",
-                        data?.description,
-                    );
-                    reject(data?.description);
-                }
-            });
+            try {
+                const axios_response = await axios.get(
+                    `/api/retrieve_file?file_id=${selectedFileId}`,
+                    {
+                        responseType: "json",
+                        timeout: 30000,
+                    },
+                );
+                console.log("THIS IS THE AXIOS RESPONSE");
+                console.log(axios_response);
+                console.log(axios_response.data);
+
+                // Start listening to edits
+                $state.socket.emit("join_file_edit", selectedFileId);
+
+                resolve(axios_response.data.data);
+            } catch (error) {
+                console.error(error);
+                reject(error);
+            }
         });
     };
 

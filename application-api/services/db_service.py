@@ -1,5 +1,9 @@
 from databases import Database
 from typing import List, Dict, Any
+from models.data import DocumentItem
+
+
+file_content_list: Dict[int, List[DocumentItem]] = {}
 
 
 # Users
